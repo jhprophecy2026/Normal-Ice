@@ -31,24 +31,31 @@ Return a JSON object with this EXACT structure:
 {{
   "document_type": "lab_report",
   "report_date": "YYYY-MM-DD or null",
+  "service_date": "YYYY-MM-DD or null (date specimen was collected or service rendered)",
+  "icd10_codes": ["ICD-10-CM code strings, e.g. E11.9, if visible in document — else empty array []"],
+  "place_of_service": "string or null (e.g. office, hospital, laboratory)",
   "patient": {{
     "name": "string or null",
     "age": number or null,
     "gender": "string or null",
     "patient_id": "string or null",
     "date_of_birth": "YYYY-MM-DD or null",
-    "contact": "string or null"
+    "contact": "string or null",
+    "insurance_id": "string or null (member/subscriber ID if visible)"
   }},
   "practitioner": {{
     "name": "string or null",
     "specialty": "string or null",
     "practitioner_id": "string or null",
+    "npi": "string or null (10-digit National Provider Identifier if present)",
     "contact": "string or null"
   }},
   "organization_name": "string or null",
   "observations": [
     {{
       "test_name": "string (required)",
+      "loinc_code": "string or null (LOINC code for this test if known, e.g. 1962-7)",
+      "cpt_code": "string or null (CPT procedure code if present in document)",
       "value": "string or null",
       "unit": "string or null",
       "reference_range": "string or null",
@@ -62,6 +69,9 @@ Return a JSON object with this EXACT structure:
 
 Important instructions:
 - Extract ALL lab test results as separate observations
+- Extract ICD-10 codes exactly as printed (e.g. "E11.9", "J18.9") — do NOT guess codes not in the document
+- Extract LOINC codes only if explicitly printed — do NOT guess
+- Extract NPI only if a 10-digit number is labeled as NPI
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include reference ranges exactly as shown
@@ -84,24 +94,31 @@ Return ONLY a valid JSON object with this EXACT structure:
 {{
   "document_type": "lab_report",
   "report_date": "YYYY-MM-DD or null",
+  "service_date": "YYYY-MM-DD or null (date specimen was collected or service rendered)",
+  "icd10_codes": ["ICD-10-CM code strings if visible — else empty array []"],
+  "place_of_service": "string or null",
   "patient": {{
     "name": "string or null",
     "age": number or null,
     "gender": "string or null",
     "patient_id": "string or null",
     "date_of_birth": "YYYY-MM-DD or null",
-    "contact": "string or null"
+    "contact": "string or null",
+    "insurance_id": "string or null"
   }},
   "practitioner": {{
     "name": "string or null",
     "specialty": "string or null",
     "practitioner_id": "string or null",
+    "npi": "string or null (10-digit NPI if present)",
     "contact": "string or null"
   }},
   "organization_name": "string or null",
   "observations": [
     {{
       "test_name": "string (required)",
+      "loinc_code": "string or null (LOINC code if explicitly printed)",
+      "cpt_code": "string or null (CPT code if present)",
       "value": "string or null",
       "unit": "string or null",
       "reference_range": "string or null",
@@ -116,6 +133,7 @@ Return ONLY a valid JSON object with this EXACT structure:
 Important instructions:
 - Extract ALL lab test results visible in the images as separate observations
 - Prefer page-image evidence when OCR text looks corrupted
+- Extract ICD-10, LOINC, NPI codes only if they are explicitly printed — do NOT guess
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include reference ranges exactly as shown
@@ -134,24 +152,28 @@ Return a JSON object with this EXACT structure:
 {{
   "document_type": "prescription",
   "prescription_date": "YYYY-MM-DD or null",
+  "icd10_codes": ["ICD-10-CM code strings if visible in document — else empty array []"],
   "patient": {{
     "name": "string or null",
     "age": number or null,
     "gender": "string or null",
     "patient_id": "string or null",
     "date_of_birth": "YYYY-MM-DD or null",
-    "contact": "string or null"
+    "contact": "string or null",
+    "insurance_id": "string or null (member/subscriber ID if visible)"
   }},
   "practitioner": {{
     "name": "string or null",
     "specialty": "string or null",
     "practitioner_id": "string or null",
+    "npi": "string or null (10-digit NPI if present)",
     "contact": "string or null"
   }},
   "organization_name": "string or null",
   "medications": [
     {{
       "medication_name": "string (required)",
+      "rxnorm_code": "string or null (RxNorm code if printed in document)",
       "dosage": "string or null",
       "frequency": "string or null",
       "duration": "string or null",
@@ -165,6 +187,8 @@ Return a JSON object with this EXACT structure:
 
 Important instructions:
 - Extract ALL medications as separate entries
+- Extract ICD-10 codes exactly as printed — do NOT guess codes not in the document
+- Extract NPI only if a 10-digit number is labeled as NPI
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include dosage with units (e.g., "500mg", "10ml")
@@ -187,24 +211,28 @@ Return ONLY a valid JSON object with this EXACT structure:
 {{
   "document_type": "prescription",
   "prescription_date": "YYYY-MM-DD or null",
+  "icd10_codes": ["ICD-10-CM code strings if visible — else empty array []"],
   "patient": {{
     "name": "string or null",
     "age": number or null,
     "gender": "string or null",
     "patient_id": "string or null",
     "date_of_birth": "YYYY-MM-DD or null",
-    "contact": "string or null"
+    "contact": "string or null",
+    "insurance_id": "string or null"
   }},
   "practitioner": {{
     "name": "string or null",
     "specialty": "string or null",
     "practitioner_id": "string or null",
+    "npi": "string or null (10-digit NPI if present)",
     "contact": "string or null"
   }},
   "organization_name": "string or null",
   "medications": [
     {{
       "medication_name": "string (required)",
+      "rxnorm_code": "string or null (RxNorm code if printed)",
       "dosage": "string or null",
       "frequency": "string or null",
       "duration": "string or null",
@@ -219,10 +247,62 @@ Return ONLY a valid JSON object with this EXACT structure:
 Important instructions:
 - Extract ALL medications visible in the images as separate entries
 - Prefer page-image evidence when OCR text looks corrupted
+- Extract ICD-10, NPI, RxNorm codes only if explicitly printed — do NOT guess
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include dosage with units
 - Return ONLY the JSON object, no explanations or markdown formatting"""
+
+    async def _call_gemini_with_retry(self, content, max_retries: int = 2) -> str:
+        """
+        Call Gemini and retry if the response is truncated.
+
+        Checks finish_reason — if it's MAX_TOKENS or the JSON doesn't
+        end with '}', retry with higher token limit.
+        """
+        token_limit = settings.GEMINI_MAX_TOKENS
+
+        for attempt in range(1, max_retries + 1):
+            response = self.model.generate_content(
+                content,
+                generation_config={
+                    "temperature": settings.GEMINI_TEMPERATURE,
+                    "max_output_tokens": token_limit,
+                    "response_mime_type": "application/json",
+                },
+            )
+
+            response_text = response.text
+            logger.info(f"Gemini attempt {attempt}: {len(response_text)} chars")
+
+            # Check finish reason
+            finish_reason = None
+            try:
+                finish_reason = response.candidates[0].finish_reason
+                logger.info(f"Gemini finish_reason: {finish_reason}")
+            except (IndexError, AttributeError):
+                pass
+
+            # finish_reason 2 = MAX_TOKENS in the protobuf enum
+            is_truncated = (
+                finish_reason in (2, "MAX_TOKENS", "STOP")
+                and not response_text.rstrip().endswith("}")
+            )
+
+            if not is_truncated and response_text.rstrip().endswith("}"):
+                return response_text
+
+            # Response looks truncated — retry with 2x tokens
+            logger.warning(
+                f"Gemini response appears truncated (finish={finish_reason}, "
+                f"ends_with_brace={response_text.rstrip()[-1:]}). "
+                f"Retrying with higher token limit..."
+            )
+            token_limit = min(token_limit * 2, 65536)
+
+        # Return whatever we got on last attempt
+        logger.warning("All Gemini retries done — using best response available")
+        return response_text
 
     def _clean_json_response(self, response_text: str) -> str:
         """Clean and extract JSON from LLM response"""
@@ -292,30 +372,18 @@ Important instructions:
                 prompt = self._create_lab_report_prompt(text)
                 content = prompt
 
-            response = self.model.generate_content(
-                content,
-                generation_config={
-                    "temperature": settings.GEMINI_TEMPERATURE,
-                    "max_output_tokens": settings.GEMINI_MAX_TOKENS,
-                    "response_mime_type": "application/json"  # Force JSON output
-                }
-            )
-            
-            # Extract and clean response
-            response_text = response.text
-            logger.info(f"Gemini raw response length: {len(response_text)} chars")
+            response_text = await self._call_gemini_with_retry(content)
             logger.info(f"Gemini raw response (first 1000 chars): {response_text[:1000]}")
-            
+
             cleaned_json = self._clean_json_response(response_text)
             logger.info(f"Cleaned JSON length: {len(cleaned_json)} chars")
-            
+
             data_dict = json.loads(cleaned_json)
-            
-            # Validate and parse with Pydantic
+
             lab_data = LabReportData(**data_dict)
             logger.info(f"Successfully extracted lab report with {len(lab_data.observations)} observations")
             return lab_data
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {e}")
             logger.error(f"Full response text:\n{response_text}")
@@ -335,30 +403,18 @@ Important instructions:
                 prompt = self._create_prescription_prompt(text)
                 content = prompt
 
-            response = self.model.generate_content(
-                content,
-                generation_config={
-                    "temperature": settings.GEMINI_TEMPERATURE,
-                    "max_output_tokens": settings.GEMINI_MAX_TOKENS,
-                    "response_mime_type": "application/json"  # Force JSON output
-                }
-            )
-            
-            # Extract and clean response
-            response_text = response.text
-            logger.info(f"Gemini raw response length: {len(response_text)} chars")
+            response_text = await self._call_gemini_with_retry(content)
             logger.info(f"Gemini raw response (first 1000 chars): {response_text[:1000]}")
-            
+
             cleaned_json = self._clean_json_response(response_text)
             logger.info(f"Cleaned JSON length: {len(cleaned_json)} chars")
-            
+
             data_dict = json.loads(cleaned_json)
-            
-            # Validate and parse with Pydantic
+
             prescription_data = PrescriptionData(**data_dict)
             logger.info(f"Successfully extracted prescription with {len(prescription_data.medications)} medications")
             return prescription_data
-            
+
         except json.JSONDecodeError as e:
             logger.error(f"JSON parsing error: {e}")
             logger.error(f"Full response text:\n{response_text}")

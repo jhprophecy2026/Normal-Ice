@@ -1,3 +1,5 @@
+import threading
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import process
@@ -18,6 +20,24 @@ app = FastAPI(
     description="AI-powered clinical data extraction and FHIR bundle generation",
     version="1.0.0"
 )
+
+
+def _preload_paddleocr():
+    """Load PaddleOCR models in background so first request is fast."""
+    try:
+        from app.services.ocr_strategies.image_based import PaddleOCREngine
+        logger.info("Preloading PaddleOCR models (background thread)...")
+        PaddleOCREngine.get_instance()
+        logger.info("PaddleOCR models loaded — ready for requests")
+    except Exception as e:
+        logger.warning(f"PaddleOCR preload failed (will retry on first request): {e}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start PaddleOCR preloading in background thread at app boot."""
+    thread = threading.Thread(target=_preload_paddleocr, daemon=True)
+    thread.start()
 
 # Configure CORS
 app.add_middleware(
