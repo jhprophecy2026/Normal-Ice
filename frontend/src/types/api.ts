@@ -275,18 +275,77 @@ export interface PatientCaseHistory {
 }
 
 export interface MedicalExtract {
+  // Hospital
+  hospital_name?: string;
+  hospital_location?: string;
+  hospital_email?: string;
+  hospital_id?: string;
+  rohini_id?: string;
+  // Doctor
   doctor_name?: string;
   doctor_contact?: string;
+  doctor_qualification?: string;
+  doctor_registration_no?: string;
+  // Medical
   presenting_complaints?: string;
   duration_of_illness?: string;
   date_of_first_consultation?: string;
   provisional_diagnosis?: string;
   icd10_diagnosis_code?: string;
   clinical_findings?: string;
+  past_history?: string;
+  // Treatment
   line_of_treatment?: string;
+  treatment_medical_management?: boolean;
+  treatment_surgical?: boolean;
+  treatment_intensive_care?: boolean;
+  treatment_investigation?: boolean;
+  medical_management_details?: string;
+  route_of_drug_administration?: string;
   surgery_name?: string;
   icd10_pcs_code?: string;
-  past_history?: string;
+  // Admission
+  admission_date?: string;
+  admission_time?: string;
+  admission_type?: string;
+  expected_days_in_hospital?: number;
+  days_in_icu?: number;
+  room_type?: string;
+  // Costs
+  room_rent_per_day?: number;
+  icu_charges_per_day?: number;
+  ot_charges?: number;
+  professional_fees?: number;
+  medicines_consumables?: number;
+  investigation_diagnostics_cost?: number;
+  other_hospital_expenses?: number;
+  total_estimated_cost?: number;
+  // Past history
+  diabetes?: boolean;
+  diabetes_since?: string;
+  hypertension?: boolean;
+  hypertension_since?: string;
+  heart_disease?: boolean;
+  heart_disease_since?: string;
+  hyperlipidemias?: boolean;
+  osteoarthritis?: boolean;
+  asthma_copd?: boolean;
+  cancer?: boolean;
+  alcohol_drug_abuse?: boolean;
+  hiv_std?: boolean;
+  other_conditions?: string;
+  // Injury / RTA
+  is_rta?: boolean;
+  date_of_injury?: string;
+  reported_to_police?: boolean;
+  fir_no?: string;
+  substance_abuse?: boolean;
+  // Maternity
+  maternity_g?: string;
+  maternity_p?: string;
+  maternity_l?: string;
+  maternity_a?: string;
+  expected_delivery_date?: string;
 }
 
 // ---------------------------------------------------------------------------

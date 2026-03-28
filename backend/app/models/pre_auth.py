@@ -169,18 +169,85 @@ class PreAuthResponse(PreAuthRequest):
 # ---------------------------------------------------------------------------
 
 class MedicalExtract(BaseModel):
+    # Hospital
+    hospital_name: Optional[str] = None
+    hospital_location: Optional[str] = None
+    hospital_email: Optional[str] = None
+    hospital_id: Optional[str] = None
+    rohini_id: Optional[str] = None
+
+    # Doctor
     doctor_name: Optional[str] = None
     doctor_contact: Optional[str] = None
+    doctor_qualification: Optional[str] = None
+    doctor_registration_no: Optional[str] = None
+
+    # Medical history & complaints
     presenting_complaints: Optional[str] = None
     duration_of_illness: Optional[str] = None
     date_of_first_consultation: Optional[str] = None
     provisional_diagnosis: Optional[str] = None
     icd10_diagnosis_code: Optional[str] = None
     clinical_findings: Optional[str] = None
+    past_history: Optional[str] = None
+
+    # Treatment
     line_of_treatment: Optional[str] = None
+    treatment_medical_management: Optional[bool] = None
+    treatment_surgical: Optional[bool] = None
+    treatment_intensive_care: Optional[bool] = None
+    treatment_investigation: Optional[bool] = None
+    medical_management_details: Optional[str] = None
+    route_of_drug_administration: Optional[str] = None
     surgery_name: Optional[str] = None
     icd10_pcs_code: Optional[str] = None
-    past_history: Optional[str] = None
+
+    # Admission
+    admission_date: Optional[str] = None
+    admission_time: Optional[str] = None
+    admission_type: Optional[str] = None        # Emergency | Planned
+    expected_days_in_hospital: Optional[int] = None
+    days_in_icu: Optional[int] = None
+    room_type: Optional[str] = None             # single | twin-sharing | general
+
+    # Estimated costs (INR — extract only if explicitly printed in the document)
+    room_rent_per_day: Optional[float] = None
+    icu_charges_per_day: Optional[float] = None
+    ot_charges: Optional[float] = None
+    professional_fees: Optional[float] = None
+    medicines_consumables: Optional[float] = None
+    investigation_diagnostics_cost: Optional[float] = None
+    other_hospital_expenses: Optional[float] = None
+    total_estimated_cost: Optional[float] = None
+
+    # Past medical history with since-dates
+    diabetes: Optional[bool] = None
+    diabetes_since: Optional[str] = None
+    hypertension: Optional[bool] = None
+    hypertension_since: Optional[str] = None
+    heart_disease: Optional[bool] = None
+    heart_disease_since: Optional[str] = None
+    hyperlipidemias: Optional[bool] = None
+    osteoarthritis: Optional[bool] = None
+    asthma_copd: Optional[bool] = None
+    cancer: Optional[bool] = None
+    alcohol_drug_abuse: Optional[bool] = None
+    hiv_std: Optional[bool] = None
+    other_conditions: Optional[str] = None
+
+    # Injury / RTA
+    is_rta: Optional[bool] = None
+    date_of_injury: Optional[str] = None
+    reported_to_police: Optional[bool] = None
+    fir_no: Optional[str] = None
+    substance_abuse: Optional[bool] = None
+
+    # Maternity
+    maternity_g: Optional[str] = None
+    maternity_p: Optional[str] = None
+    maternity_l: Optional[str] = None
+    maternity_a: Optional[str] = None
+    expected_delivery_date: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------

@@ -13,7 +13,7 @@ function StepDot({ done, label }: { done: boolean; label: string }) {
         }`}
         title={label}
       />
-      <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:block">{label}</span>
+      <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:block whitespace-nowrap">{label}</span>
     </div>
   );
 }
@@ -138,7 +138,7 @@ export default function CaseList() {
                   }`}
                 >
                   <td className="px-5 py-4">
-                    <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg">
+                    <span className="font-mono text-xs bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1 rounded-lg whitespace-nowrap">
                       {c.bill_no}
                     </span>
                   </td>

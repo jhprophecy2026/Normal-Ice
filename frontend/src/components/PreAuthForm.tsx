@@ -268,20 +268,82 @@ export default function PreAuthForm() {
     setExtracting(true);
     try {
       const ext = await extractMedicalFromPdf(id!, file);
+      // Helper: only overwrite a form field if the extracted value is non-null/non-empty
+      const pick = <T,>(extracted: T | null | undefined, current: T): T =>
+        (extracted !== null && extracted !== undefined) ? extracted : current;
       setForm(f => ({
         ...f,
-        doctor_name: ext.doctor_name ?? f.doctor_name,
-        doctor_contact: ext.doctor_contact ?? f.doctor_contact,
-        presenting_complaints: ext.presenting_complaints ?? f.presenting_complaints,
-        duration_of_illness: ext.duration_of_illness ?? f.duration_of_illness,
-        date_of_first_consultation: ext.date_of_first_consultation ?? f.date_of_first_consultation,
-        provisional_diagnosis: ext.provisional_diagnosis ?? f.provisional_diagnosis,
-        icd10_diagnosis_code: ext.icd10_diagnosis_code ?? f.icd10_diagnosis_code,
-        clinical_findings: ext.clinical_findings ?? f.clinical_findings,
-        surgery_name: ext.surgery_name ?? f.surgery_name,
-        icd10_pcs_code: ext.icd10_pcs_code ?? f.icd10_pcs_code,
-        past_history: ext.past_history ?? f.past_history,
-        treatment_surgical: ext.surgery_name ? true : f.treatment_surgical,
+        // Hospital
+        hospital_name:                 pick(ext.hospital_name,                 f.hospital_name),
+        hospital_location:             pick(ext.hospital_location,             f.hospital_location),
+        hospital_email:                pick(ext.hospital_email,                f.hospital_email),
+        hospital_id:                   pick(ext.hospital_id,                   f.hospital_id),
+        rohini_id:                     pick(ext.rohini_id,                     f.rohini_id),
+        // Doctor
+        doctor_name:                   pick(ext.doctor_name,                   f.doctor_name),
+        doctor_contact:                pick(ext.doctor_contact,                f.doctor_contact),
+        doctor_qualification:          pick(ext.doctor_qualification,          f.doctor_qualification),
+        doctor_registration_no:        pick(ext.doctor_registration_no,        f.doctor_registration_no),
+        // Medical
+        presenting_complaints:         pick(ext.presenting_complaints,         f.presenting_complaints),
+        duration_of_illness:           pick(ext.duration_of_illness,           f.duration_of_illness),
+        date_of_first_consultation:    pick(ext.date_of_first_consultation,    f.date_of_first_consultation),
+        provisional_diagnosis:         pick(ext.provisional_diagnosis,         f.provisional_diagnosis),
+        icd10_diagnosis_code:          pick(ext.icd10_diagnosis_code,          f.icd10_diagnosis_code),
+        clinical_findings:             pick(ext.clinical_findings,             f.clinical_findings),
+        past_history:                  pick(ext.past_history,                  f.past_history),
+        // Treatment
+        line_of_treatment:             pick(ext.line_of_treatment,             f.line_of_treatment),
+        treatment_medical_management:  ext.treatment_medical_management  ?? f.treatment_medical_management,
+        treatment_surgical:            ext.treatment_surgical            ?? (ext.surgery_name ? true : f.treatment_surgical),
+        treatment_intensive_care:      ext.treatment_intensive_care      ?? f.treatment_intensive_care,
+        treatment_investigation:       ext.treatment_investigation       ?? f.treatment_investigation,
+        medical_management_details:    pick(ext.medical_management_details,    f.medical_management_details),
+        route_of_drug_administration:  pick(ext.route_of_drug_administration,  f.route_of_drug_administration),
+        surgery_name:                  pick(ext.surgery_name,                  f.surgery_name),
+        icd10_pcs_code:                pick(ext.icd10_pcs_code,                f.icd10_pcs_code),
+        // Admission
+        admission_date:                pick(ext.admission_date,                f.admission_date),
+        admission_time:                pick(ext.admission_time,                f.admission_time),
+        admission_type:                pick(ext.admission_type,                f.admission_type),
+        expected_days_in_hospital:     pick(ext.expected_days_in_hospital,     f.expected_days_in_hospital),
+        days_in_icu:                   pick(ext.days_in_icu,                   f.days_in_icu),
+        room_type:                     pick(ext.room_type,                     f.room_type),
+        // Costs (only if explicitly in the document)
+        room_rent_per_day:             pick(ext.room_rent_per_day,             f.room_rent_per_day),
+        icu_charges_per_day:           pick(ext.icu_charges_per_day,           f.icu_charges_per_day),
+        ot_charges:                    pick(ext.ot_charges,                    f.ot_charges),
+        professional_fees:             pick(ext.professional_fees,             f.professional_fees),
+        medicines_consumables:         pick(ext.medicines_consumables,         f.medicines_consumables),
+        investigation_diagnostics_cost:pick(ext.investigation_diagnostics_cost,f.investigation_diagnostics_cost),
+        other_hospital_expenses:       pick(ext.other_hospital_expenses,       f.other_hospital_expenses),
+        total_estimated_cost:          pick(ext.total_estimated_cost,          f.total_estimated_cost),
+        // Past medical history
+        diabetes:                      ext.diabetes          ?? f.diabetes,
+        diabetes_since:                pick(ext.diabetes_since,                f.diabetes_since),
+        hypertension:                  ext.hypertension       ?? f.hypertension,
+        hypertension_since:            pick(ext.hypertension_since,            f.hypertension_since),
+        heart_disease:                 ext.heart_disease      ?? f.heart_disease,
+        heart_disease_since:           pick(ext.heart_disease_since,           f.heart_disease_since),
+        hyperlipidemias:               ext.hyperlipidemias    ?? f.hyperlipidemias,
+        osteoarthritis:                ext.osteoarthritis     ?? f.osteoarthritis,
+        asthma_copd:                   ext.asthma_copd        ?? f.asthma_copd,
+        cancer:                        ext.cancer             ?? f.cancer,
+        alcohol_drug_abuse:            ext.alcohol_drug_abuse ?? f.alcohol_drug_abuse,
+        hiv_std:                       ext.hiv_std            ?? f.hiv_std,
+        other_conditions:              pick(ext.other_conditions,              f.other_conditions),
+        // Injury / RTA
+        is_rta:                        ext.is_rta             ?? f.is_rta,
+        date_of_injury:                pick(ext.date_of_injury,                f.date_of_injury),
+        reported_to_police:            ext.reported_to_police ?? f.reported_to_police,
+        fir_no:                        pick(ext.fir_no,                        f.fir_no),
+        substance_abuse:               ext.substance_abuse    ?? f.substance_abuse,
+        // Maternity
+        maternity_g:                   pick(ext.maternity_g,                   f.maternity_g),
+        maternity_p:                   pick(ext.maternity_p,                   f.maternity_p),
+        maternity_l:                   pick(ext.maternity_l,                   f.maternity_l),
+        maternity_a:                   pick(ext.maternity_a,                   f.maternity_a),
+        expected_delivery_date:        pick(ext.expected_delivery_date,        f.expected_delivery_date),
       }));
     } finally { setExtracting(false); }
   };
@@ -328,7 +390,7 @@ export default function PreAuthForm() {
       } else {
         await updatePreAuth(id, form);
       }
-      if (bill) navigate(`/cases/${encodeURIComponent(bill)}?step=2`);
+      if (bill) navigate(`/cases/${encodeURIComponent(bill)}`);
     } catch (e: any) {
       setSaveMsg('Failed: ' + (e.response?.data?.detail || e.message));
       setTimeout(() => setSaveMsg(null), 4000);

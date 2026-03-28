@@ -95,9 +95,9 @@ function Stepper({
   onStepClick: (id: number) => void;
 }) {
   return (
-    <div className="flex items-start mb-10">
+    <div className="flex items-start justify-center mb-10">
       {steps.map((step, i) => (
-        <div key={step.id} className="flex items-start flex-1 min-w-0">
+        <div key={step.id} className="flex items-start w-40 min-w-0 shrink-0">
           {/* Circle + label */}
           <div className="flex flex-col items-center flex-shrink-0">
             <button

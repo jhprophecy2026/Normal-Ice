@@ -10,7 +10,7 @@ import CaseList from './components/CaseList';
 import CasePage from './components/CasePage';
 import { processPdf, healthCheck } from './services/api';
 import type { ProcessResponse } from './types/api';
-import { Activity, Sun, Moon, CheckCircle2, Users, Upload, ClipboardList, TrendingUp, Briefcase } from 'lucide-react';
+import { Activity, Sun, Moon, CheckCircle2, Users, Upload, Briefcase } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Upload page (previously the whole App)
@@ -189,8 +189,6 @@ function App() {
             {navLink('/', 'Upload', Upload)}
             {navLink('/cases', 'Cases', Briefcase)}
             {navLink('/patients', 'Patients', Users)}
-            {navLink('/pre-auth', 'Pre-Auth', ClipboardList)}
-            {navLink('/enhancement', 'Enhancement', TrendingUp)}
           </div>
         </div>
 
