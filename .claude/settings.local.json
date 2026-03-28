@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(venvScriptspython.exe -c \"from app.services.ocr import extract_pdf_text, render_pdf_pages; print\\(''ocr.py imports OK''\\)\")",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(\"venv/Scripts/python\" -c \"import supabase; print\\(''installed:'', supabase.__version__\\)\")",
+      "Bash(\"venv/Scripts/python\" -c \":*)"
     ]
   }
 }

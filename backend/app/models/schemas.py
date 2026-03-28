@@ -10,6 +10,8 @@ class ProcessResponse(BaseModel):
     fhir_bundle: Optional[Dict[str, Any]] = None
     document_type: Optional[str] = None
     billing_flags: List["BillingFlag"] = []
+    patient_id: Optional[str] = None       # assigned persistent patient ID
+    patient_action: Optional[str] = None   # "created" or "updated"
     error: Optional[str] = None
 
 
@@ -74,6 +76,7 @@ class LabReportData(BaseModel):
     practitioner: Optional[PractitionerInfo] = None
     organization_name: Optional[str] = None
     observations: List[LabObservation] = []
+    medications: List[MedicationInfo] = []    # populated when document contains both lab + prescription
     diagnosis: Optional[str] = None
     notes: Optional[str] = None
 

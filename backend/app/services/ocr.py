@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-OCR_DPI = 200          # 200 DPI is plenty for PaddleOCR (was 300 — saves ~45% RAM)
+OCR_DPI = 150          # 150 DPI is sufficient for PaddleOCR on typed medical docs — cuts image size ~44% vs 200 DPI
 THUMBNAIL_DPI = 150    # Lower DPI for Gemini multimodal (it doesn't need 300)
 MAX_OCR_PAGES = 50     # Safety cap for OCR
 MAX_GEMINI_PAGES = 5   # Max pages to send as images to Gemini (token limit)

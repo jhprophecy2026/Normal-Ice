@@ -60,7 +60,7 @@ class PaddleOCREngine:
             from paddleocr import PaddleOCR
 
             cls._instance = PaddleOCR(
-                use_textline_orientation=True,
+                use_textline_orientation=False,  # disabled — medical PDFs are always upright, saves huge time per line
                 lang="en",
                 device="cpu",
                 enable_hpi=False,

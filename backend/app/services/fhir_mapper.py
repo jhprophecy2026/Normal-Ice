@@ -700,7 +700,9 @@ async def generate_fhir_bundle(
             raise ValueError(f"Unsupported data type: {type(data)}")
 
         billing_flags = check_billing_completeness(data)
-        bundle_dict = bundle.dict(exclude_none=True)
+        # Use .json() → loads() to handle datetime and other non-serializable types
+        import json as _json
+        bundle_dict = _json.loads(bundle.json(exclude_none=True))
 
         logger.info(
             f"Generated FHIR bundle: {len(bundle.entry)} resources, "

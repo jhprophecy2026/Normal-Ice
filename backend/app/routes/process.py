@@ -12,6 +12,7 @@ from app.services.llm import (
 from app.services.fhir_mapper import generate_fhir_bundle
 from app.services.document_splitter import split_document
 from app.services.ocr_strategies.quality_checker import TextQualityChecker
+from app.services.patient_store import patient_store
 from app.config import settings
 import logging
 
@@ -219,7 +220,25 @@ async def process_pdf(
             )
 
         # ------------------------------------------------------------------
-        # 6. Success
+        # 6. Persist to Supabase
+        # ------------------------------------------------------------------
+        patient_id     = None
+        patient_action = None
+        try:
+            patient_id, patient_action = patient_store.save_patient(
+                structured_data=structured_data,
+                fhir_bundle=fhir_bundle,
+                billing_flags=billing_flags,
+                filename=file.filename or "unknown.pdf",
+                extracted_text=extracted_text,
+            )
+            logger.info(f"Patient record {patient_action}: {patient_id}")
+        except Exception as exc:
+            # Storage failure must never block the main response
+            logger.error(f"Patient store save failed (non-fatal): {exc}")
+
+        # ------------------------------------------------------------------
+        # 7. Success
         # ------------------------------------------------------------------
         message = f"Successfully processed {document_type}"
         if use_batch:
@@ -232,6 +251,8 @@ async def process_pdf(
             fhir_bundle=fhir_bundle,
             document_type=document_type,
             billing_flags=billing_flags,
+            patient_id=patient_id,
+            patient_action=patient_action,
         )
 
     except HTTPException:

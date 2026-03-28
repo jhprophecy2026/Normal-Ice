@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import JsonViewer from './JsonViewer';
 import type { ProcessResponse } from '../types/api';
-import { CheckCircle2, Download, ChevronLeft, Database, FileText, Activity } from 'lucide-react';
+import { CheckCircle2, Download, ChevronLeft, Database, FileText, Activity, User, XCircle, AlertTriangle } from 'lucide-react';
 
 interface ResultsViewProps {
   result: ProcessResponse;
@@ -9,6 +10,7 @@ interface ResultsViewProps {
 }
 
 const ResultsView: React.FC<ResultsViewProps> = ({ result, onReset }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'fhir' | 'text' | 'summary'>('summary');
 
   const downloadJson = () => {
@@ -37,6 +39,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({ result, onReset }) => {
       }
     });
 
+    const criticalFlags = result.billing_flags?.filter(f => f.severity === 'critical') ?? [];
+    const warningFlags  = result.billing_flags?.filter(f => f.severity === 'warning')  ?? [];
+
     return (
       <div className="space-y-6">
         {/* Success Banner */}
@@ -45,7 +50,7 @@ const ResultsView: React.FC<ResultsViewProps> = ({ result, onReset }) => {
             <div className="bg-emerald-600 dark:bg-emerald-500 p-2 rounded-lg">
               <CheckCircle2 className="text-white" size={24} />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="text-lg font-bold text-emerald-900 dark:text-emerald-100 mb-1">
                 Successfully Processed {result.document_type?.replace('_', ' ').toUpperCase()}
               </h3>
@@ -55,6 +60,52 @@ const ResultsView: React.FC<ResultsViewProps> = ({ result, onReset }) => {
             </div>
           </div>
         </div>
+
+        {/* Patient record link */}
+        {result.patient_id && (
+          <button
+            onClick={() => navigate(`/patients/${result.patient_id}`)}
+            className="w-full flex items-center justify-between gap-3 p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-emerald-400 dark:hover:border-emerald-600 transition-all group"
+          >
+            <div className="flex items-center gap-3">
+              <div className="bg-emerald-100 dark:bg-emerald-900/40 p-2 rounded-lg">
+                <User size={18} className="text-emerald-600 dark:text-emerald-400" />
+              </div>
+              <div className="text-left">
+                <div className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                  Patient record {result.patient_action === 'created' ? 'created' : 'updated'}
+                </div>
+                <div className="text-xs text-slate-500 dark:text-slate-400">ID: {result.patient_id}</div>
+              </div>
+            </div>
+            <span className="text-sm text-emerald-600 dark:text-emerald-400 group-hover:underline">View →</span>
+          </button>
+        )}
+
+        {/* Billing flags */}
+        {(criticalFlags.length > 0 || warningFlags.length > 0) && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Billing Flags</h4>
+            {criticalFlags.map((f, i) => (
+              <div key={i} className="flex gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <span className="font-semibold text-red-600 dark:text-red-400">{f.field}: </span>
+                  <span className="text-slate-700 dark:text-slate-300">{f.message}</span>
+                </div>
+              </div>
+            ))}
+            {warningFlags.map((f, i) => (
+              <div key={i} className="flex gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <span className="font-semibold text-amber-600 dark:text-amber-400">{f.field}: </span>
+                  <span className="text-slate-700 dark:text-slate-300">{f.message}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         <div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">

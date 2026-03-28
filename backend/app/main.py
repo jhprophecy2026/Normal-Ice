@@ -3,6 +3,7 @@ import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import process
+from app.routes import patients
 from app.config import settings
 import logging
 
@@ -49,7 +50,8 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(process.router, prefix="/api", tags=["process"])
+app.include_router(process.router,  prefix="/api", tags=["process"])
+app.include_router(patients.router, prefix="/api", tags=["patients"])
 
 @app.get("/")
 async def root():

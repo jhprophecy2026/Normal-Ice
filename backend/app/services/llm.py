@@ -63,12 +63,24 @@ Return a JSON object with this EXACT structure:
       "interpretation": "normal/abnormal/high/low or null"
     }}
   ],
+  "medications": [
+    {{
+      "medication_name": "string (required if any medications present)",
+      "rxnorm_code": "string or null",
+      "dosage": "string or null",
+      "frequency": "string or null",
+      "duration": "string or null",
+      "route": "oral/IV/topical/etc or null",
+      "instructions": "string or null"
+    }}
+  ],
   "diagnosis": "string or null",
   "notes": "string or null"
 }}
 
 Important instructions:
 - Extract ALL lab test results as separate observations
+- Extract ALL medications/prescriptions if present in the document (some reports include both)
 - Extract ICD-10 codes exactly as printed (e.g. "E11.9", "J18.9") — do NOT guess codes not in the document
 - Extract LOINC codes only if explicitly printed — do NOT guess
 - Extract NPI only if a 10-digit number is labeled as NPI
@@ -126,12 +138,24 @@ Return ONLY a valid JSON object with this EXACT structure:
       "interpretation": "normal/abnormal/high/low or null"
     }}
   ],
+  "medications": [
+    {{
+      "medication_name": "string (required if any medications present)",
+      "rxnorm_code": "string or null",
+      "dosage": "string or null",
+      "frequency": "string or null",
+      "duration": "string or null",
+      "route": "oral/IV/topical/etc or null",
+      "instructions": "string or null"
+    }}
+  ],
   "diagnosis": "string or null",
   "notes": "string or null"
 }}
 
 Important instructions:
 - Extract ALL lab test results visible in the images as separate observations
+- Extract ALL medications/prescriptions if present in the document
 - Prefer page-image evidence when OCR text looks corrupted
 - Extract ICD-10, LOINC, NPI codes only if they are explicitly printed — do NOT guess
 - Use null for missing fields, never omit required structure
