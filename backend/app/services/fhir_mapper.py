@@ -73,113 +73,11 @@ def check_billing_completeness(
     data: Union[LabReportData, PrescriptionData]
 ) -> List[BillingFlag]:
     """
-    Inspect the structured data and flag fields that are missing or incomplete
-    and would cause claim denials or revenue loss.
-
-    Returns a list of BillingFlag objects (empty = all critical fields present).
-
-    This is designed to be swappable: the rules live here, the rest of the
-    pipeline just consumes the list.
+    India-specific insurance claim completeness check.
+    Delegates to claim_reconciliation service — rules are defined there.
     """
-    flags: List[BillingFlag] = []
-
-    # --- Patient ---
-    if not data.patient:
-        flags.append(BillingFlag(
-            field="patient",
-            severity="critical",
-            message="No patient information extracted — claim cannot be submitted without patient identity.",
-        ))
-    else:
-        p = data.patient
-        if not p.name:
-            flags.append(BillingFlag(
-                field="patient.name",
-                severity="critical",
-                message="Patient name missing — required on all claim types.",
-            ))
-        if not p.date_of_birth:
-            flags.append(BillingFlag(
-                field="patient.date_of_birth",
-                severity="critical",
-                message="Patient date of birth missing — triggers MA63 remark code denial.",
-            ))
-        if not p.patient_id:
-            flags.append(BillingFlag(
-                field="patient.patient_id",
-                severity="warning",
-                message="No patient/member ID found — may cause matching issues with payer.",
-            ))
-
-    # --- Practitioner / NPI ---
-    if not data.practitioner or not data.practitioner.name:
-        flags.append(BillingFlag(
-            field="practitioner.name",
-            severity="critical",
-            message="Provider name missing — required for claim submission.",
-        ))
-    if not data.practitioner or not data.practitioner.npi:
-        flags.append(BillingFlag(
-            field="practitioner.npi",
-            severity="critical",
-            message="Provider NPI missing — triggers N290 denial (missing/invalid NPI).",
-        ))
-
-    # --- Diagnosis / ICD-10 ---
-    if not data.icd10_codes:
-        flags.append(BillingFlag(
-            field="icd10_codes",
-            severity="critical",
-            message="No ICD-10-CM diagnosis codes — medical necessity cannot be established, CO-16 denial likely.",
-        ))
-
-    # --- Service date ---
-    service_date = getattr(data, "report_date", None) or getattr(data, "prescription_date", None)
-    if not service_date:
-        flags.append(BillingFlag(
-            field="service_date",
-            severity="critical",
-            message="Date of service missing — required on Claim.item.servicedDate.",
-        ))
-
-    # --- Document-type-specific checks ---
-    if isinstance(data, LabReportData):
-        obs_without_loinc = [o.test_name for o in data.observations if not o.loinc_code]
-        if obs_without_loinc:
-            flags.append(BillingFlag(
-                field="observations.loinc_code",
-                severity="warning",
-                message=f"{len(obs_without_loinc)} observation(s) have no LOINC code: "
-                        f"{', '.join(obs_without_loinc[:3])}{'...' if len(obs_without_loinc) > 3 else ''}. "
-                        "LOINC codes required for lab billing.",
-            ))
-        if not data.observations:
-            flags.append(BillingFlag(
-                field="observations",
-                severity="critical",
-                message="No lab observations extracted — nothing to bill.",
-            ))
-
-    elif isinstance(data, PrescriptionData):
-        if not data.medications:
-            flags.append(BillingFlag(
-                field="medications",
-                severity="critical",
-                message="No medications extracted — nothing to bill.",
-            ))
-        meds_without_rxnorm = [m.medication_name for m in data.medications if not m.rxnorm_code]
-        if meds_without_rxnorm:
-            flags.append(BillingFlag(
-                field="medications.rxnorm_code",
-                severity="warning",
-                message=f"{len(meds_without_rxnorm)} medication(s) have no RxNorm code: "
-                        f"{', '.join(meds_without_rxnorm[:3])}{'...' if len(meds_without_rxnorm) > 3 else ''}.",
-            ))
-
-    critical_count = sum(1 for f in flags if f.severity == "critical")
-    warning_count  = sum(1 for f in flags if f.severity == "warning")
-    logger.info(f"Billing completeness: {critical_count} critical, {warning_count} warning flags")
-    return flags
+    from app.services.claim_reconciliation import check_upload_billing_flags
+    return check_upload_billing_flags(data)
 
 
 # ---------------------------------------------------------------------------

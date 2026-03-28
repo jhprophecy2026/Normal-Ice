@@ -411,6 +411,7 @@ class PatientStore:
                 upload_date=d["upload_date"],
                 document_type=d["document_type"],
                 extracted_text_preview=d.get("extracted_text_preview"),
+                bill_no=d.get("bill_no"),
             )
             for d in (doc_res.data or [])
         ]

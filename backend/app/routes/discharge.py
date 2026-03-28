@@ -17,6 +17,7 @@ from app.models.discharge import DischargeRequest, DischargeResponse, DischargeE
 from app.services.supabase_client import get_supabase
 from app.services.ocr import extract_pdf_text, render_gemini_thumbnails
 from app.services.discharge_extractor import extract_discharge_data
+from app.services.claim_reconciliation import compute_discharge_revenue_flags
 from app.services.ocr_strategies.quality_checker import TextQualityChecker
 from app.config import settings
 
@@ -26,63 +27,9 @@ router = APIRouter()
 OCR_QUALITY_USABLE = 40.0
 
 
-# ---------------------------------------------------------------------------
-# Revenue flag computation
-# ---------------------------------------------------------------------------
-
 def _compute_revenue_flags(discharge: dict, pre_auth: dict | None) -> List[dict]:
-    flags: List[dict] = []
-
-    # Missing discharge date
-    if not discharge.get("discharge_date"):
-        flags.append({
-            "field": "discharge_date",
-            "severity": "critical",
-            "message": "Discharge date is missing",
-        })
-
-    # Missing procedure codes
-    if not discharge.get("procedure_codes"):
-        flags.append({
-            "field": "procedure_codes",
-            "severity": "warning",
-            "message": "Procedure codes (ICD-10 PCS/CPT) not provided",
-        })
-
-    if pre_auth:
-        # ICD-10 diagnosis code mismatch
-        discharge_icd = (discharge.get("final_icd10_codes") or "").strip()
-        preauth_icd = (pre_auth.get("icd10_diagnosis_code") or "").strip()
-        if discharge_icd and preauth_icd:
-            # Compare by prefix (first 3 chars of ICD-10 code)
-            discharge_prefix = discharge_icd.split(",")[0].strip()[:3].upper()
-            preauth_prefix = preauth_icd[:3].upper()
-            if discharge_prefix and preauth_prefix and discharge_prefix != preauth_prefix:
-                flags.append({
-                    "field": "final_icd10_codes",
-                    "severity": "warning",
-                    "message": f"Diagnosis code mismatch: discharge={discharge_icd!r} vs pre-auth={preauth_icd!r}",
-                })
-
-        # Bill vs pre-auth estimate variance
-        total_bill = discharge.get("total_bill_amount")
-        total_estimate = pre_auth.get("total_estimated_cost")
-        if total_bill is not None and total_estimate is not None and total_estimate > 0:
-            pct = ((total_bill - total_estimate) / total_estimate) * 100
-            if pct > 20:
-                flags.append({
-                    "field": "total_bill_amount",
-                    "severity": "critical",
-                    "message": f"Bill exceeds pre-auth by {pct:.1f}%",
-                })
-            elif pct > 5:
-                flags.append({
-                    "field": "total_bill_amount",
-                    "severity": "warning",
-                    "message": f"Bill exceeds pre-auth by {pct:.1f}%",
-                })
-
-    return flags
+    """Delegates to the claim reconciliation service."""
+    return compute_discharge_revenue_flags(discharge, pre_auth)
 
 
 def _row_to_response(row: dict) -> DischargeResponse:

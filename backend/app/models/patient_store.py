@@ -9,6 +9,7 @@ class DocumentRecord(BaseModel):
     upload_date: str
     document_type: str  # "lab_report" or "prescription"
     extracted_text_preview: Optional[str] = None
+    bill_no: Optional[str] = None  # episode identifier — links document to a cashless case
 
 
 class StoredPatientRecord(BaseModel):
