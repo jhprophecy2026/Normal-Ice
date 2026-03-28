@@ -32,7 +32,7 @@ Return a JSON object with this EXACT structure:
   "document_type": "lab_report",
   "report_date": "YYYY-MM-DD or null",
   "service_date": "YYYY-MM-DD or null (date specimen was collected or service rendered)",
-  "icd10_codes": ["ICD-10-CM code strings, e.g. E11.9, if visible in document — else empty array []"],
+  "icd10_codes": ["ICD-10-CM codes — extract if printed; if not printed but a diagnosis exists, infer the most accurate code from medical knowledge (e.g. E11.9, I10, D64.9); else empty array []"],
   "place_of_service": "string or null (e.g. office, hospital, laboratory)",
   "patient": {{
     "name": "string or null",
@@ -54,8 +54,8 @@ Return a JSON object with this EXACT structure:
   "observations": [
     {{
       "test_name": "string (required)",
-      "loinc_code": "string or null (LOINC code for this test if known, e.g. 1962-7)",
-      "cpt_code": "string or null (CPT procedure code if present in document)",
+      "loinc_code": "string or null (LOINC code — extract if printed, otherwise infer from test name using standard LOINC mappings, e.g. Haemoglobin=718-7, Fasting Blood Sugar=1558-6, HbA1c=59261-8)",
+      "cpt_code": "string or null (CPT code — extract only if explicitly printed in the document, do not infer)",
       "value": "string or null",
       "unit": "string or null",
       "reference_range": "string or null",
@@ -66,7 +66,7 @@ Return a JSON object with this EXACT structure:
   "medications": [
     {{
       "medication_name": "string (required if any medications present)",
-      "rxnorm_code": "string or null",
+      "rxnorm_code": "string or null (RxNorm code — extract if printed, otherwise infer from the drug name using standard RxNorm mappings, e.g. Metformin=860975, Atorvastatin=83367, Amoxicillin=723)",
       "dosage": "string or null",
       "frequency": "string or null",
       "duration": "string or null",
@@ -81,9 +81,11 @@ Return a JSON object with this EXACT structure:
 Important instructions:
 - Extract ALL lab test results as separate observations
 - Extract ALL medications/prescriptions if present in the document (some reports include both)
-- Extract ICD-10 codes exactly as printed (e.g. "E11.9", "J18.9") — do NOT guess codes not in the document
-- Extract LOINC codes only if explicitly printed — do NOT guess
-- Extract NPI only if a 10-digit number is labeled as NPI
+- ICD-10 codes: extract exactly if printed; if not printed but a diagnosis is present, infer the most accurate ICD-10-CM code from medical knowledge (e.g. "Type 2 Diabetes" → "E11.9", "Hypertension" → "I10", "Anaemia" → "D64.9")
+- LOINC codes: extract if printed; otherwise infer the standard LOINC code for each test from medical knowledge
+- RxNorm codes: extract if printed; otherwise infer the standard RxNorm concept ID for each drug from medical knowledge
+- CPT codes: extract only if explicitly printed — do NOT infer
+- NPI: extract only if a 10-digit number is labeled as NPI
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include reference ranges exactly as shown
@@ -129,8 +131,8 @@ Return ONLY a valid JSON object with this EXACT structure:
   "observations": [
     {{
       "test_name": "string (required)",
-      "loinc_code": "string or null (LOINC code if explicitly printed)",
-      "cpt_code": "string or null (CPT code if present)",
+      "loinc_code": "string or null (LOINC code — extract if printed, otherwise infer from test name using standard LOINC mappings)",
+      "cpt_code": "string or null (CPT code — extract only if explicitly printed, do not infer)",
       "value": "string or null",
       "unit": "string or null",
       "reference_range": "string or null",
@@ -141,7 +143,7 @@ Return ONLY a valid JSON object with this EXACT structure:
   "medications": [
     {{
       "medication_name": "string (required if any medications present)",
-      "rxnorm_code": "string or null",
+      "rxnorm_code": "string or null (RxNorm code — extract if printed, otherwise infer from drug name using standard RxNorm mappings)",
       "dosage": "string or null",
       "frequency": "string or null",
       "duration": "string or null",
@@ -157,7 +159,11 @@ Important instructions:
 - Extract ALL lab test results visible in the images as separate observations
 - Extract ALL medications/prescriptions if present in the document
 - Prefer page-image evidence when OCR text looks corrupted
-- Extract ICD-10, LOINC, NPI codes only if they are explicitly printed — do NOT guess
+- ICD-10 codes: extract exactly if printed; if not printed but a diagnosis is present, infer the most accurate ICD-10-CM code from medical knowledge
+- LOINC codes: extract if printed; otherwise infer the standard LOINC code for each test from medical knowledge
+- RxNorm codes: extract if printed; otherwise infer the standard RxNorm concept ID for each drug from medical knowledge
+- CPT codes: extract only if explicitly printed — do NOT infer
+- NPI: extract only if a 10-digit number is labeled as NPI
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include reference ranges exactly as shown
@@ -176,7 +182,7 @@ Return a JSON object with this EXACT structure:
 {{
   "document_type": "prescription",
   "prescription_date": "YYYY-MM-DD or null",
-  "icd10_codes": ["ICD-10-CM code strings if visible in document — else empty array []"],
+  "icd10_codes": ["ICD-10-CM codes — extract if printed; if not printed but a diagnosis exists, infer the most accurate code from medical knowledge; else empty array []"],
   "patient": {{
     "name": "string or null",
     "age": number or null,
@@ -197,7 +203,7 @@ Return a JSON object with this EXACT structure:
   "medications": [
     {{
       "medication_name": "string (required)",
-      "rxnorm_code": "string or null (RxNorm code if printed in document)",
+      "rxnorm_code": "string or null (RxNorm code — extract if printed, otherwise infer from drug name using standard RxNorm mappings, e.g. Metformin=860975, Atorvastatin=83367, Amoxicillin=723)",
       "dosage": "string or null",
       "frequency": "string or null",
       "duration": "string or null",
@@ -211,8 +217,9 @@ Return a JSON object with this EXACT structure:
 
 Important instructions:
 - Extract ALL medications as separate entries
-- Extract ICD-10 codes exactly as printed — do NOT guess codes not in the document
-- Extract NPI only if a 10-digit number is labeled as NPI
+- ICD-10 codes: extract exactly if printed; if not printed but a diagnosis is present, infer the most accurate ICD-10-CM code from medical knowledge (e.g. "Type 2 Diabetes" → "E11.9", "Hypertension" → "I10")
+- RxNorm codes: extract if printed; otherwise infer the standard RxNorm concept ID for each drug from medical knowledge
+- NPI: extract only if a 10-digit number is labeled as NPI
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include dosage with units (e.g., "500mg", "10ml")
@@ -256,7 +263,7 @@ Return ONLY a valid JSON object with this EXACT structure:
   "medications": [
     {{
       "medication_name": "string (required)",
-      "rxnorm_code": "string or null (RxNorm code if printed)",
+      "rxnorm_code": "string or null (RxNorm code — extract if printed, otherwise infer from drug name using standard RxNorm mappings)",
       "dosage": "string or null",
       "frequency": "string or null",
       "duration": "string or null",
@@ -271,7 +278,10 @@ Return ONLY a valid JSON object with this EXACT structure:
 Important instructions:
 - Extract ALL medications visible in the images as separate entries
 - Prefer page-image evidence when OCR text looks corrupted
-- Extract ICD-10, NPI, RxNorm codes only if explicitly printed — do NOT guess
+- ICD-10 codes: extract exactly if printed; if not printed but a diagnosis is present, infer the most accurate ICD-10-CM code from medical knowledge
+- RxNorm codes: extract if printed; otherwise infer the standard RxNorm concept ID for each drug from medical knowledge
+- CPT codes: extract only if explicitly printed — do NOT infer
+- NPI: extract only if a 10-digit number is labeled as NPI
 - Use null for missing fields, never omit required structure
 - Normalize dates to YYYY-MM-DD format
 - Include dosage with units
