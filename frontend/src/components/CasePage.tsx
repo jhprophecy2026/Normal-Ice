@@ -46,6 +46,151 @@ function Badge({ status }: { status: string }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Revenue flags dropdown
+// ---------------------------------------------------------------------------
+
+type RevenueFlag = { field: string; severity: 'critical' | 'warning'; message: string };
+
+function FlagsDropdown({ critical, warnings }: { critical: RevenueFlag[]; warnings: RevenueFlag[] }) {
+  const [open, setOpen] = useState(false);
+  const total = critical.length + warnings.length;
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+      {/* Header / toggle */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            Revenue Reconciliation Flags
+          </span>
+          {critical.length > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 text-xs font-semibold">
+              <AlertCircle size={11} />
+              {critical.length} Critical
+            </span>
+          )}
+          {warnings.length > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs font-semibold">
+              <AlertTriangle size={11} />
+              {warnings.length} Caution
+            </span>
+          )}
+        </div>
+        <svg
+          className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {/* Dropdown body */}
+      {open && (
+        <div className="divide-y divide-slate-100 dark:divide-slate-800">
+          {critical.map((flag, i) => (
+            <div key={`c-${i}`} className="flex items-start gap-2 px-4 py-3 bg-red-50 dark:bg-red-950/30 text-sm text-red-700 dark:text-red-300">
+              <AlertCircle size={14} className="shrink-0 mt-0.5" />
+              <span>{flag.message}</span>
+            </div>
+          ))}
+          {warnings.map((flag, i) => (
+            <div key={`w-${i}`} className="flex items-start gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 text-sm text-amber-700 dark:text-amber-300">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" />
+              <span>{flag.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Discharge confidence score
+// ---------------------------------------------------------------------------
+
+type DischargeFields = {
+  discharge_date?: string | null;
+  final_diagnosis?: string | null;
+  final_icd10_codes?: string | null;
+  procedure_codes?: string | null;
+  total_bill_amount?: number | null;
+  room_charges?: number | null;
+  icu_charges?: number | null;
+  surgery_charges?: number | null;
+  medicine_charges?: number | null;
+  investigation_charges?: number | null;
+  other_charges?: number | null;
+};
+
+function computeDischargeConfidence(f: DischargeFields): number {
+  let score = 0;
+  if (f.discharge_date)    score += 15;
+  if (f.final_diagnosis)   score += 20;
+  if (f.final_icd10_codes) score += 15;
+  if (f.procedure_codes)   score += 10;
+  if (f.total_bill_amount) score += 20;
+  const chargesFilled = [
+    f.room_charges, f.icu_charges, f.surgery_charges,
+    f.medicine_charges, f.investigation_charges, f.other_charges,
+  ].filter(v => v != null && v > 0).length;
+  score += Math.min(chargesFilled, 3) * 7; // up to 21 pts for line items
+  return Math.min(Math.round(score), 100);
+}
+
+function DischargeConfidenceBadge({ score }: { score: number }) {
+  const high   = score >= 75;
+  const medium = score >= 50 && score < 75;
+  const r = 18;
+  const circ = 2 * Math.PI * r;
+  const dash = (score / 100) * circ;
+
+  const colorRing = high ? '#22c55e' : medium ? '#f59e0b' : '#ef4444';
+  const colorBg   = high
+    ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'
+    : medium
+    ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800'
+    : 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800';
+  const colorText = high
+    ? 'text-green-700 dark:text-green-300'
+    : medium
+    ? 'text-amber-700 dark:text-amber-300'
+    : 'text-red-700 dark:text-red-300';
+  const label = high
+    ? 'High'
+    : medium
+    ? 'Moderate'
+    : 'Low';
+  const icon = high ? '✓' : medium ? '!' : '✗';
+
+  return (
+    <div className={`flex items-center gap-4 px-4 py-3 rounded-xl border text-sm ${colorBg}`}>
+      {/* Circular score gauge */}
+      <div className="relative shrink-0 w-12 h-12">
+        <svg width="48" height="48" viewBox="0 0 48 48" className="-rotate-90">
+          <circle cx="24" cy="24" r={r} fill="none" stroke="currentColor" strokeWidth="4"
+            className="text-slate-200 dark:text-slate-700" />
+          <circle cx="24" cy="24" r={r} fill="none" strokeWidth="4"
+            stroke={colorRing}
+            strokeDasharray={`${dash} ${circ}`}
+            strokeLinecap="round" />
+        </svg>
+        <span className={`absolute inset-0 flex items-center justify-center text-xs font-bold ${colorText}`}>
+          {icon}
+        </span>
+      </div>
+      <div>
+        <p className={`font-semibold ${colorText}`}>{score}% Extraction Confidence</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{label} confidence</p>
+      </div>
+    </div>
+  );
+}
+
 function Info({ label, value }: { label: string; value?: string | null }) {
   return (
     <div>
@@ -630,6 +775,9 @@ function DischargeContent({
   const [dischargeId, setDischargeId] = useState<string | null>(discharge?.id ?? null);
   const [form, setForm] = useState<DischargeFormState>(discharge ?? {});
   const [err, setErr] = useState<string | null>(null);
+  const [confidence, setConfidence] = useState<number | null>(
+    discharge ? computeDischargeConfidence(discharge) : null
+  );
 
   const pa = caseData.pre_auth;
   const set = (k: keyof DischargeFormState, v: unknown) => setForm((f) => ({ ...f, [k]: v }));
@@ -651,20 +799,24 @@ function DischargeContent({
     try {
       const id = await ensureRecord();
       const extracted = await extractDischargeData(id, file);
-      setForm((f) => ({
-        ...f,
-        discharge_date:        extracted.discharge_date        ?? f.discharge_date,
-        final_diagnosis:       extracted.final_diagnosis       ?? f.final_diagnosis,
-        final_icd10_codes:     extracted.final_icd10_codes     ?? f.final_icd10_codes,
-        procedure_codes:       extracted.procedure_codes       ?? f.procedure_codes,
-        room_charges:          extracted.room_charges          ?? f.room_charges,
-        icu_charges:           extracted.icu_charges           ?? f.icu_charges,
-        surgery_charges:       extracted.surgery_charges       ?? f.surgery_charges,
-        medicine_charges:      extracted.medicine_charges      ?? f.medicine_charges,
-        investigation_charges: extracted.investigation_charges ?? f.investigation_charges,
-        other_charges:         extracted.other_charges         ?? f.other_charges,
-        total_bill_amount:     extracted.total_bill_amount     ?? f.total_bill_amount,
-      }));
+      setForm((f) => {
+        const merged = {
+          ...f,
+          discharge_date:        extracted.discharge_date        ?? f.discharge_date,
+          final_diagnosis:       extracted.final_diagnosis       ?? f.final_diagnosis,
+          final_icd10_codes:     extracted.final_icd10_codes     ?? f.final_icd10_codes,
+          procedure_codes:       extracted.procedure_codes       ?? f.procedure_codes,
+          room_charges:          extracted.room_charges          ?? f.room_charges,
+          icu_charges:           extracted.icu_charges           ?? f.icu_charges,
+          surgery_charges:       extracted.surgery_charges       ?? f.surgery_charges,
+          medicine_charges:      extracted.medicine_charges      ?? f.medicine_charges,
+          investigation_charges: extracted.investigation_charges ?? f.investigation_charges,
+          other_charges:         extracted.other_charges         ?? f.other_charges,
+          total_bill_amount:     extracted.total_bill_amount     ?? f.total_bill_amount,
+        };
+        setConfidence(computeDischargeConfidence(merged));
+        return merged;
+      });
     } catch (e: any) {
       setErr(e.response?.data?.detail || e.message || 'Extraction failed');
     } finally {
@@ -689,28 +841,19 @@ function DischargeContent({
 
   return (
     <div className="space-y-5">
-      {/* Revenue flags */}
-      {discharge && !editing && (discharge.revenue_flags?.length ?? 0) > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Revenue Reconciliation Flags</p>
-          {discharge.revenue_flags.map((flag, i) => (
-            <div key={i} className={`flex items-start gap-2 px-4 py-3 rounded-xl text-sm ${
-              flag.severity === 'critical'
-                ? 'bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
-                : 'bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300'
-            }`}>
-              {flag.severity === 'critical'
-                ? <AlertCircle size={15} className="shrink-0 mt-0.5" />
-                : <AlertTriangle size={15} className="shrink-0 mt-0.5" />}
-              <span>{flag.message}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Revenue flags — collapsible dropdown */}
+      {discharge && !editing && (discharge.revenue_flags?.length ?? 0) > 0 && (() => {
+        const critical = discharge.revenue_flags.filter(f => f.severity === 'critical');
+        const warnings = discharge.revenue_flags.filter(f => f.severity !== 'critical');
+        return (
+          <FlagsDropdown critical={critical} warnings={warnings} />
+        );
+      })()}
 
       {/* Summary view */}
       {discharge && !editing && (
         <div className="space-y-5">
+          {confidence !== null && <DischargeConfidenceBadge score={confidence} />}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
             <Info label="Discharge Date"   value={discharge.discharge_date} />
             <Info label="Final Diagnosis"  value={discharge.final_diagnosis} />
@@ -766,6 +909,9 @@ function DischargeContent({
               </>
             )}
           </label>
+
+          {/* Confidence badge — shown after a file is uploaded */}
+          {confidence !== null && <DischargeConfidenceBadge score={confidence} />}
 
           {/* Editable fields */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
