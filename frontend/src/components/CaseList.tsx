@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Search, Briefcase } from 'lucide-react';
-import { listCases } from '../services/api';
+import { Plus, Search, Briefcase, Download, ChevronDown } from 'lucide-react';
+import { listCases, downloadMisReport } from '../services/api';
 import type { CaseSummary } from '../types/api';
 
 function StepDot({ done, label }: { done: boolean; label: string }) {
@@ -35,6 +35,29 @@ export default function CaseList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const [misOpen, setMisOpen] = useState(false);
+  const [misLoading, setMisLoading] = useState(false);
+  const misRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (misRef.current && !misRef.current.contains(e.target as Node)) setMisOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const handleMisDownload = async (period: 'weekly' | 'monthly' | 'yearly') => {
+    setMisOpen(false);
+    setMisLoading(true);
+    try {
+      await downloadMisReport(period);
+    } catch (e: any) {
+      alert(e.response?.data?.detail || e.message || 'Failed to generate MIS report');
+    } finally {
+      setMisLoading(false);
+    }
+  };
 
   useEffect(() => {
     listCases()
@@ -66,13 +89,43 @@ export default function CaseList() {
             <p className="text-sm text-slate-500 dark:text-slate-400">Cashless hospitalization lifecycle</p>
           </div>
         </div>
-        <Link
-          to="/pre-auth"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
-        >
-          <Plus size={16} />
-          New Pre-Auth
-        </Link>
+        <div className="flex items-center gap-2">
+          {/* MIS Report dropdown */}
+          <div ref={misRef} className="relative">
+            <button
+              onClick={() => setMisOpen(o => !o)}
+              disabled={misLoading}
+              className="flex items-center gap-1.5 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {misLoading
+                ? <span className="w-3.5 h-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                : <Download size={15} />}
+              MIS Report
+              <ChevronDown size={13} className={`transition-transform duration-150 ${misOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {misOpen && (
+              <div className="absolute right-0 mt-1.5 w-36 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-lg z-20 overflow-hidden">
+                {(['weekly', 'monthly', 'yearly'] as const).map(p => (
+                  <button
+                    key={p}
+                    onClick={() => handleMisDownload(p)}
+                    className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 capitalize transition-colors"
+                  >
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Link
+            to="/pre-auth"
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+          >
+            <Plus size={16} />
+            New Pre-Auth
+          </Link>
+        </div>
       </div>
 
       {/* Search */}

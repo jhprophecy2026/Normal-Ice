@@ -9,10 +9,11 @@ import {
   extractEnhancementData,
   createDischarge, extractDischargeData, updateDischarge,
   createSettlement, updateSettlement,
+  getFinancialAudit,
 } from '../services/api';
 import type {
   CaseDetail, EnhancementData, EnhancementExtract, DischargeData, DischargeResponse,
-  SettlementResponse,
+  SettlementResponse, FinancialAudit,
 } from '../types/api';
 
 // ---------------------------------------------------------------------------
@@ -286,6 +287,268 @@ function Stepper({
 }
 
 // ---------------------------------------------------------------------------
+// Financial Audit Panel
+// ---------------------------------------------------------------------------
+
+function RiskBadge({ tier, color }: { tier: string; color: string }) {
+  const cls =
+    color === 'green' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700' :
+    color === 'amber' ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700' :
+                        'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-200 dark:border-red-700';
+  return (
+    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${cls}`}>{tier} Risk</span>
+  );
+}
+
+function inr(n: number) { return `₹${n.toLocaleString('en-IN')}`; }
+
+function FinancialAuditPanel({ abhaId }: { abhaId: string }) {
+  const [audit, setAudit] = useState<FinancialAudit | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [section, setSection] = useState<'overview' | 'claims' | 'benchmarks' | 'risk' | 'insurance' | 'tpa'>('overview');
+
+  useEffect(() => {
+    setLoading(true);
+    getFinancialAudit(abhaId)
+      .then(setAudit)
+      .catch(() => setAudit(null))
+      .finally(() => setLoading(false));
+  }, [abhaId]);
+
+  if (loading) return null;
+  if (!audit) return null;
+
+  const tabs: { key: typeof section; label: string }[] = [
+    { key: 'overview',   label: 'Overview' },
+    { key: 'claims',     label: `Claims (${audit.past_claims.length})` },
+    { key: 'benchmarks', label: 'Cost Benchmarks' },
+    { key: 'risk',       label: 'Risk Factors' },
+    { key: 'insurance',  label: 'Insurance' },
+    { key: 'tpa',        label: 'TPA Notes' },
+  ];
+
+  const impactColor = (impact: string) =>
+    impact.includes('cost_to_patient') || impact.includes('financial_risk') || impact.includes('high_cost') || impact.includes('claim_risk')
+      ? 'text-red-600 dark:text-red-400'
+      : impact.includes('cost_increase') || impact.includes('operational_risk') || impact.includes('transfusion_risk') || impact.includes('minor')
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-slate-500 dark:text-slate-400';
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+      {/* Header toggle */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+      >
+        <div className="flex items-center gap-3">
+          <IndianRupee size={15} className="text-blue-500" />
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">Financial Audit</span>
+          <RiskBadge tier={audit.risk_tier} color={audit.risk_color} />
+        </div>
+        <svg className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="bg-white dark:bg-slate-900">
+          {/* Sub-tabs */}
+          <div className="flex gap-0 border-b border-slate-200 dark:border-slate-700 overflow-x-auto">
+            {tabs.map(t => (
+              <button
+                key={t.key}
+                onClick={() => setSection(t.key)}
+                className={`shrink-0 px-4 py-2.5 text-xs font-semibold transition-colors whitespace-nowrap border-b-2 -mb-px ${
+                  section === t.key
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="p-4 space-y-4">
+
+            {/* Overview */}
+            {section === 'overview' && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-400">Generated {audit.generated_date}</span>
+                </div>
+                <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{audit.summary}</p>
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                    <p className="text-xs text-slate-500 mb-0.5">Sum Insured</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{inr(audit.insurance.sum_insured)}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                    <p className="text-xs text-slate-500 mb-0.5">Available Balance</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{inr(audit.insurance.available)}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                    <p className="text-xs text-slate-500 mb-0.5">Insurer</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{audit.insurance.company}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                    <p className="text-xs text-slate-500 mb-0.5">TPA</p>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{audit.insurance.tpa}</p>
+                  </div>
+                </div>
+                {audit.recommendations.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Recommendations</p>
+                    <ul className="space-y-1.5">
+                      {audit.recommendations.map((r, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-slate-600 dark:text-slate-400">
+                          <span className="shrink-0 text-blue-500 mt-0.5">→</span>
+                          {r}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Past Claims */}
+            {section === 'claims' && (
+              <div className="space-y-3">
+                {audit.past_claims.length === 0 && (
+                  <p className="text-sm text-slate-400 text-center py-4">No past claims on record.</p>
+                )}
+                {audit.past_claims.map((c, i) => (
+                  <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{c.event}</p>
+                      <span className={`shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                        c.status === 'Settled' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' :
+                        c.status.includes('Rejected') ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' :
+                        'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                      }`}>{c.status}</span>
+                    </div>
+                    <p className="text-xs text-slate-400">{c.admission_date} → {c.discharge_date} · TPA: {c.tpa}</p>
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <div>
+                        <p className="text-xs text-slate-400">Claimed</p>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{inr(c.claimed_amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Settled</p>
+                        <p className={`text-sm font-semibold ${c.settled_amount > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>{inr(c.settled_amount)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-slate-400">Deducted</p>
+                        <p className="text-sm font-semibold text-red-500">{inr(c.deduction_amount)}</p>
+                      </div>
+                    </div>
+                    {c.deduction_reason && (
+                      <p className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 rounded px-2 py-1.5 mt-1">
+                        <span className="font-semibold">Deduction reason: </span>{c.deduction_reason}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Cost Benchmarks */}
+            {section === 'benchmarks' && (
+              <div className="space-y-3">
+                {audit.cost_benchmarks.map((b, i) => (
+                  <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{b.category}</p>
+                      <span className="text-sm font-bold text-blue-600 dark:text-blue-400 shrink-0">{b.typical_range}</span>
+                    </div>
+                    <p className="text-xs text-slate-400"><span className="font-medium">Basis:</span> {b.basis}</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 rounded px-2 py-1">
+                      {b.patient_note}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Risk Factors */}
+            {section === 'risk' && (
+              <div className="space-y-3">
+                {audit.risk_factors.map((r, i) => (
+                  <div key={i} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{r.factor}</p>
+                      <span className={`text-xs font-bold shrink-0 ${impactColor(r.impact)}`}>
+                        {r.impact.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 dark:text-slate-400">{r.detail}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Insurance */}
+            {section === 'insurance' && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    ['Company', audit.insurance.company],
+                    ['TPA', audit.insurance.tpa],
+                    ['Policy No.', audit.insurance.policy_no],
+                    ['Room Eligibility', audit.insurance.room_eligibility],
+                    ['Cashless Network', audit.insurance.cashless_network],
+                  ].map(([l, v]) => (
+                    <div key={l} className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                      <p className="text-xs text-slate-400 mb-0.5">{l}</p>
+                      <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{v}</p>
+                    </div>
+                  ))}
+                  <div className="bg-slate-50 dark:bg-slate-800 rounded-lg p-3">
+                    <p className="text-xs text-slate-400 mb-0.5">Sum Insured / Available</p>
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                      {inr(audit.insurance.sum_insured)} / {inr(audit.insurance.available)}
+                    </p>
+                  </div>
+                </div>
+                {audit.insurance.key_exclusions.length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Key Exclusions</p>
+                    <ul className="space-y-1">
+                      {audit.insurance.key_exclusions.map((e, i) => (
+                        <li key={i} className="flex gap-2 text-xs text-red-600 dark:text-red-400">
+                          <span className="shrink-0">✕</span>{e}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TPA Watch Points */}
+            {section === 'tpa' && (
+              <div className="space-y-2">
+                {audit.tpa_watch_points.map((p, i) => (
+                  <div key={i} className="flex gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-300">
+                    <AlertTriangle size={13} className="shrink-0 mt-0.5" />
+                    {p}
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Step 1 — Pre-Auth content
 // ---------------------------------------------------------------------------
 
@@ -365,6 +628,9 @@ function PreAuthContent({
         {pa.icd10_pcs_code && <Info label="ICD-10 PCS"  value={pa.icd10_pcs_code} />}
         <Info label="Total Estimated Cost"  value={fmt(pa.total_estimated_cost)} />
       </div>
+
+      {/* Financial Audit — shown when ABHA ID has a pre-generated profile */}
+      {pa.abha_id && <FinancialAuditPanel abhaId={pa.abha_id} />}
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2 flex-wrap">

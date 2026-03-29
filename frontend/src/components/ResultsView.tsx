@@ -2,7 +2,57 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import JsonViewer from './JsonViewer';
 import type { ProcessResponse } from '../types/api';
-import { CheckCircle2, Download, ChevronLeft, Database, FileText, Activity, User, XCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle2, Download, ChevronLeft, Database, FileText, Activity, User, XCircle, AlertTriangle, ChevronDown } from 'lucide-react';
+
+function FlagsDropdown({ criticalFlags, warningFlags }: { criticalFlags: any[]; warningFlags: any[] }) {
+  const [open, setOpen] = useState(false);
+  const total = criticalFlags.length + warningFlags.length;
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left"
+      >
+        <div className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+          Billing Flags
+          {criticalFlags.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+              {criticalFlags.length} critical
+            </span>
+          )}
+          {warningFlags.length > 0 && (
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
+              {warningFlags.length} caution
+            </span>
+          )}
+        </div>
+        <ChevronDown size={15} className={`text-slate-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="p-3 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+          {criticalFlags.map((f, i) => (
+            <div key={i} className="flex gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+              <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <span className="font-semibold text-red-600 dark:text-red-400">{f.field}: </span>
+                <span className="text-slate-700 dark:text-slate-300">{f.message}</span>
+              </div>
+            </div>
+          ))}
+          {warningFlags.map((f, i) => (
+            <div key={i} className="flex gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <span className="font-semibold text-amber-600 dark:text-amber-400">{f.field}: </span>
+                <span className="text-slate-700 dark:text-slate-300">{f.message}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface ResultsViewProps {
   result: ProcessResponse;
@@ -82,29 +132,9 @@ const ResultsView: React.FC<ResultsViewProps> = ({ result, onReset }) => {
           </button>
         )}
 
-        {/* Billing flags */}
+        {/* Billing flags — collapsible dropdown */}
         {(criticalFlags.length > 0 || warningFlags.length > 0) && (
-          <div className="space-y-2">
-            <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Billing Flags</h4>
-            {criticalFlags.map((f, i) => (
-              <div key={i} className="flex gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-                <XCircle size={15} className="text-red-500 shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <span className="font-semibold text-red-600 dark:text-red-400">{f.field}: </span>
-                  <span className="text-slate-700 dark:text-slate-300">{f.message}</span>
-                </div>
-              </div>
-            ))}
-            {warningFlags.map((f, i) => (
-              <div key={i} className="flex gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <AlertTriangle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                <div className="text-sm">
-                  <span className="font-semibold text-amber-600 dark:text-amber-400">{f.field}: </span>
-                  <span className="text-slate-700 dark:text-slate-300">{f.message}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <FlagsDropdown criticalFlags={criticalFlags} warningFlags={warningFlags} />
         )}
 
         <div>

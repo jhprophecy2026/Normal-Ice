@@ -10,6 +10,8 @@ from app.routes import discharge
 from app.routes import settlement
 from app.routes import cases
 from app.routes import config
+from app.routes import mis
+from app.routes import financial_audit
 from app.config import settings
 import logging
 
@@ -42,14 +44,27 @@ def _preload_paddleocr():
 
 @app.on_event("startup")
 async def startup_event():
-    """Start PaddleOCR preloading in background thread at app boot."""
+    """Start PaddleOCR preloading in background thread at app boot.
+    Set DISABLE_OCR_PRELOAD=true to skip on memory-constrained deployments.
+    """
+    import os
+    if os.getenv("DISABLE_OCR_PRELOAD", "false").lower() == "true":
+        logger.info("OCR preload skipped (DISABLE_OCR_PRELOAD=true)")
+        return
     thread = threading.Thread(target=_preload_paddleocr, daemon=True)
     thread.start()
 
-# Configure CORS
+# Configure CORS — FRONTEND_URL supports comma-separated values for multiple origins
+import os as _os
+_allowed_origins = ["http://localhost:5173", "http://localhost:3000"]
+for _url in settings.FRONTEND_URL.split(","):
+    _url = _url.strip()
+    if _url and _url not in _allowed_origins:
+        _allowed_origins.append(_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:5173", "http://localhost:3000"],
+    allow_origins=_allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,6 +79,8 @@ app.include_router(discharge.router,      prefix="/api", tags=["discharge"])
 app.include_router(settlement.router,     prefix="/api", tags=["settlement"])
 app.include_router(cases.router,          prefix="/api", tags=["cases"])
 app.include_router(config.router,         prefix="/api", tags=["config"])
+app.include_router(mis.router,            prefix="/api", tags=["mis"])
+app.include_router(financial_audit.router, prefix="/api", tags=["financial-audit"])
 
 @app.get("/")
 async def root():

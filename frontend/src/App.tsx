@@ -9,12 +9,26 @@ import EnhancementPage from './components/EnhancementPage';
 import CaseList from './components/CaseList';
 import CasePage from './components/CasePage';
 import ConfigPage from './components/ConfigPage';
+import LoginPage from './components/LoginPage';
+import FinanceManagerPage from './components/FinanceManagerPage';
 import { processPdf } from './services/api';
 import type { ProcessResponse } from './services/api';
-import { Activity, Sun, Moon, Users, Upload, Briefcase, Settings } from 'lucide-react';
+import { Activity, Sun, Moon, Users, Upload, Briefcase, Settings, LogOut } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Upload page (previously the whole App)
+// Auth helpers
+// ---------------------------------------------------------------------------
+interface AuthUser { role: 'staff' | 'finance'; username: string }
+
+function getStoredAuth(): AuthUser | null {
+  try {
+    const raw = localStorage.getItem('auth');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// ---------------------------------------------------------------------------
+// Upload page
 // ---------------------------------------------------------------------------
 function UploadPage() {
   const [lastResult, setLastResult] = useState<ProcessResponse | null>(null);
@@ -47,9 +61,7 @@ function UploadPage() {
           </div>
         ) : (
           <div className="mt-10 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 transition-colors animate-in fade-in duration-700">
-            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-              How it works
-            </h3>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">How it works</h3>
             <ol className="space-y-3 text-slate-600 dark:text-slate-400">
               <li className="flex items-start gap-3">
                 <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">1</span>
@@ -76,25 +88,51 @@ function UploadPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Root App with routing
+// Root App
 // ---------------------------------------------------------------------------
 function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(
     () => (localStorage.getItem('theme') as 'light' | 'dark') || 'light'
   );
+  const [auth, setAuth] = useState<AuthUser | null>(getStoredAuth);
   const location = useLocation();
 
   useEffect(() => {
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    document.documentElement.classList.toggle('dark', theme === 'dark');
     localStorage.setItem('theme', theme);
   }, [theme]);
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light');
 
+  const handleLogin = (role: 'staff' | 'finance', username: string) => {
+    const user: AuthUser = { role, username };
+    localStorage.setItem('auth', JSON.stringify(user));
+    setAuth(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth');
+    setAuth(null);
+  };
+
+  // Not logged in → show login
+  if (!auth) {
+    return <LoginPage onLogin={handleLogin} theme={theme} toggleTheme={toggleTheme} />;
+  }
+
+  // Finance Manager → dedicated portal
+  if (auth.role === 'finance') {
+    return (
+      <FinanceManagerPage
+        username={auth.username}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // Hospital Staff → normal app
   const navLink = (to: string, label: string, Icon: React.ElementType) => {
     const active = location.pathname === to || (to !== '/' && location.pathname.startsWith(to));
     return (
@@ -126,7 +164,6 @@ function App() {
             </span>
           </Link>
 
-          {/* Nav links */}
           <div className="flex items-center gap-1">
             {navLink('/', 'Upload', Upload)}
             {navLink('/cases', 'Cases', Briefcase)}
@@ -135,13 +172,26 @@ function App() {
           </div>
         </div>
 
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-          title="Toggle Light/Dark Mode"
-        >
-          {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-        </button>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400 hidden sm:block mr-1">
+            {auth.username}
+          </span>
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-full text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+            title="Toggle Light/Dark Mode"
+          >
+            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            title="Sign out"
+          >
+            <LogOut size={15} />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
+        </div>
       </nav>
 
       {/* Routes */}
@@ -149,14 +199,13 @@ function App() {
         <Route path="/"                    element={<UploadPage />} />
         <Route path="/patients"            element={<main className="max-w-6xl mx-auto py-12 px-6"><PatientList /></main>} />
         <Route path="/patients/:patientId" element={<main className="max-w-6xl mx-auto py-12 px-6"><PatientDetail /></main>} />
-        <Route path="/pre-auth"             element={<main className="max-w-6xl mx-auto py-12 px-6"><PreAuthForm /></main>} />
-        <Route path="/enhancement"          element={<main className="max-w-6xl mx-auto py-12 px-6"><EnhancementPage /></main>} />
+        <Route path="/pre-auth"            element={<main className="max-w-6xl mx-auto py-12 px-6"><PreAuthForm /></main>} />
+        <Route path="/enhancement"         element={<main className="max-w-6xl mx-auto py-12 px-6"><EnhancementPage /></main>} />
         <Route path="/cases"               element={<main className="max-w-6xl mx-auto py-12 px-6"><CaseList /></main>} />
         <Route path="/cases/:billNo"       element={<main className="max-w-6xl mx-auto py-12 px-6"><CasePage /></main>} />
         <Route path="/configure"           element={<main className="max-w-4xl mx-auto py-12 px-6"><ConfigPage /></main>} />
       </Routes>
 
-      {/* Footer */}
       <footer className="text-center mt-16 py-8 border-t border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 text-sm transition-colors">
         <p>Healthcare FHIR Converter — AI-Powered Clinical Data Normalization</p>
       </footer>

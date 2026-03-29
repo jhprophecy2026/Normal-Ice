@@ -246,4 +246,26 @@ export const uploadCostEstimatesFile = async (file: File): Promise<{ success: bo
   return response.data;
 };
 
+// ---------------------------------------------------------------------------
+// Financial Audit
+// ---------------------------------------------------------------------------
+export const getFinancialAudit = async (abhaId: string): Promise<import('../types/api').FinancialAudit> => {
+  const response = await api.get(`/financial-audit/${encodeURIComponent(abhaId)}`);
+  return response.data;
+};
+
+// ---------------------------------------------------------------------------
+// MIS Report
+// ---------------------------------------------------------------------------
+export const downloadMisReport = async (period: 'weekly' | 'monthly' | 'yearly'): Promise<void> => {
+  const response = await api.get('/mis/report', { params: { period }, responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  a.href = url;
+  a.download = `MIS_Report_${period}_${date}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
 export default api;

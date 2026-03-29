@@ -1,0 +1,544 @@
+{
+  "12-3456-7890-1234": {
+    "abha_id": "12-3456-7890-1234",
+    "patient_name": "Rahul Sharma",
+    "generated_date": "2026-03-01",
+    "risk_tier": "Low",
+    "risk_color": "green",
+    "summary": "Rahul Sharma is a 45-year-old male with no documented chronic conditions. His financial risk profile is low — he has maintained continuous group health insurance under HDFC ERGO since 2019, with zero claim history prior to 2024. His policy sum insured of ₹5,00,000 is adequate for most acute surgical or medical admissions at a Tier-1 hospital in Pune. Cost projections are based on Apollo MRP rate cards applicable to Pune.",
+    "past_claims": [
+      {
+        "year": 2024,
+        "event": "Laparoscopic Appendicectomy — KEM Hospital, Pune",
+        "admission_date": "2024-08-14",
+        "discharge_date": "2024-08-17",
+        "claimed_amount": 98500,
+        "settled_amount": 91200,
+        "deduction_amount": 7300,
+        "deduction_reason": "Non-medical consumables (gloves, drapes) deducted as per HDFC ERGO standard exclusion clause 4.2",
+        "tpa": "Medi Assist",
+        "status": "Settled"
+      }
+    ],
+    "cost_benchmarks": [
+      {
+        "category": "Room Charges",
+        "typical_range": "₹6,000 – ₹9,000 / day",
+        "basis": "Apollo MRP rate card — General Ward (AC)",
+        "patient_note": "Policy entitles single AC room; General Ward chosen to minimize co-pay."
+      },
+      {
+        "category": "Surgical Procedures",
+        "typical_range": "₹35,000 – ₹80,000",
+        "basis": "Apollo MRP rate card — Laparoscopic / open procedures",
+        "patient_note": "No prior surgical complications. Standard pricing applies."
+      },
+      {
+        "category": "Anaesthesia",
+        "typical_range": "₹12,000 – ₹18,000",
+        "basis": "15–20% of surgeon fee — Apollo standard",
+        "patient_note": "No allergy history on record; standard general anaesthesia expected."
+      },
+      {
+        "category": "Medicines & Consumables",
+        "typical_range": "₹8,000 – ₹20,000",
+        "basis": "Apollo MRP rate card — antibiotic prophylaxis + post-op consumables",
+        "patient_note": "Watch for non-medical consumables exclusion (₹5,000 – ₹8,000 typically excluded by HDFC ERGO)."
+      },
+      {
+        "category": "Investigations",
+        "typical_range": "₹5,000 – ₹12,000",
+        "basis": "Apollo MRP rate card — CBC, LFT, RFT, ECG, chest X-ray",
+        "patient_note": "Pre-operative panel mandatory; post-op review labs expected."
+      }
+    ],
+    "risk_factors": [
+      {
+        "factor": "No chronic comorbidities",
+        "impact": "neutral",
+        "detail": "Absence of diabetes, hypertension or cardiac disease reduces likelihood of ICU escalation and prolonged stay."
+      },
+      {
+        "factor": "Age 45 — mild anaesthetic risk elevation",
+        "impact": "minor_increase",
+        "detail": "Standard pre-anaesthetic workup (ECG, Echo if indicated) will add ₹3,000 – ₹6,000 to investigation costs compared to patients under 40."
+      },
+      {
+        "factor": "HDFC ERGO non-medical consumables exclusion",
+        "impact": "cost_to_patient",
+        "detail": "Policy clause 4.2 excludes gloves, drapes, syringes, bandages. Expect ₹5,000 – ₹10,000 out-of-pocket on any surgical admission."
+      }
+    ],
+    "insurance": {
+      "company": "HDFC ERGO General Insurance",
+      "tpa": "Medi Assist",
+      "policy_no": "HDFC123456",
+      "sum_insured": 500000,
+      "utilized_ytd": 0,
+      "available": 500000,
+      "room_eligibility": "Single AC Room",
+      "cashless_network": "Yes — Apollo, Manipal, Fortis, Ruby Hall Clinic (Pune)",
+      "key_exclusions": [
+        "Non-medical consumables (clause 4.2)",
+        "Attendant charges",
+        "Dental treatment unless caused by accident",
+        "OPD consultations"
+      ]
+    },
+    "tpa_watch_points": [
+      "Verify surgeon registration number against MCI/NMC portal before approving pre-auth.",
+      "Histopathology report mandatory for any abdominal surgery to validate diagnosis.",
+      "Check OT register entry matches admission date — Medi Assist flags same-day OT as high-risk.",
+      "Pre-auth amount should not include non-medical consumables; break out line items."
+    ],
+    "recommendations": [
+      "Request itemised bill at discharge to identify and remove non-covered consumables before final settlement.",
+      "Confirm cashless facility is active with Medi Assist at least 48 hours before planned procedures.",
+      "Patient should carry original ABHA card and policy e-card for smooth admission."
+    ]
+  },
+
+  "14-2345-6789-0011": {
+    "abha_id": "14-2345-6789-0011",
+    "patient_name": "Priya Menon",
+    "generated_date": "2026-03-01",
+    "risk_tier": "Moderate",
+    "risk_color": "amber",
+    "summary": "Priya Menon is a 33-year-old female with documented hypertension since 2020, currently managed on antihypertensives. Her risk profile is moderate — hypertension elevates probability of acute admissions (hypertensive crisis, target-organ damage, early cardiac events) by approximately 2.3× compared to age-matched controls without the condition. Her Max Bupa policy provides adequate coverage, but TPA scrutiny is high for hypertension-related admissions due to the 'pre-existing disease' 4-year waiting period clause. Priya's policy was issued in 2022, meaning the waiting period is active and may result in partial claim rejections if the admission is directly linked to hypertension.",
+    "past_claims": [
+      {
+        "year": 2025,
+        "event": "Hypertensive urgency management — Manipal Hospital, Bengaluru",
+        "admission_date": "2025-01-09",
+        "discharge_date": "2025-01-12",
+        "claimed_amount": 74500,
+        "settled_amount": 0,
+        "deduction_amount": 74500,
+        "deduction_reason": "Claim rejected — pre-existing hypertension within 4-year waiting period (Max Bupa policy clause 7.1). Patient appealed; matter under IRDAI ombudsman review.",
+        "tpa": "Max Bupa TPA",
+        "status": "Rejected (Appeal Pending)"
+      }
+    ],
+    "cost_benchmarks": [
+      {
+        "category": "Room Charges",
+        "typical_range": "₹5,000 – ₹8,000 / day",
+        "basis": "Apollo MRP rate card — Semi-Private Room",
+        "patient_note": "Max Bupa policy entitles semi-private room. ICU stay is likely for hypertensive emergencies — ICU rates ₹15,000 – ₹22,000/day."
+      },
+      {
+        "category": "Cardiology Consultation",
+        "typical_range": "₹2,500 – ₹4,000 / visit",
+        "basis": "Apollo MRP rate card — Senior Cardiologist OPD/IP fees",
+        "patient_note": "Likely 2–4 cardiology consultations per hypertension admission."
+      },
+      {
+        "category": "Investigations — Cardiac & Renal Panel",
+        "typical_range": "₹12,000 – ₹22,000",
+        "basis": "Apollo MRP — ECG, 2D Echo, Holter, Renal function tests, Urine routine",
+        "patient_note": "Target organ damage workup adds ₹10,000 – ₹18,000 vs standard panel."
+      },
+      {
+        "category": "Medicines (Antihypertensives, IV)",
+        "typical_range": "₹15,000 – ₹30,000",
+        "basis": "Apollo MRP — IV labetalol, oral amlodipine/losartan, diuretics",
+        "patient_note": "IV drug costs significantly higher than oral; expect elevated medicines bill during crisis admissions."
+      }
+    ],
+    "risk_factors": [
+      {
+        "factor": "Pre-existing hypertension — PED waiting period active",
+        "impact": "claim_risk",
+        "detail": "Max Bupa imposes a 4-year PED waiting period. Policy issued 2022 → waiting period ends 2026. Any admission in 2025–early 2026 directly caused by hypertension faces rejection risk. TPA will scrutinise causal link."
+      },
+      {
+        "factor": "Target organ damage risk",
+        "impact": "cost_increase",
+        "detail": "Uncontrolled hypertension in 33yo female: risk of LVH, CKD Stage 1-2, retinopathy. Each adds ₹20,000 – ₹80,000 to workup costs and prolongs stay."
+      },
+      {
+        "factor": "Female, reproductive age",
+        "impact": "additional_coverage",
+        "detail": "Maternity benefit under Max Bupa activates after 24 months. Policy issued 2022 — maternity coverage now active. LSCS/NVD covered up to ₹50,000."
+      }
+    ],
+    "insurance": {
+      "company": "Max Bupa Health Insurance",
+      "tpa": "Max Bupa TPA",
+      "policy_no": "MAXB987654",
+      "sum_insured": 300000,
+      "utilized_ytd": 0,
+      "available": 300000,
+      "room_eligibility": "Semi-Private Room",
+      "cashless_network": "Yes — Apollo, Manipal, Narayana (Bengaluru)",
+      "key_exclusions": [
+        "Hypertension-related claims within 4-year waiting period (ends 2026)",
+        "Non-medical consumables",
+        "Pharmacy items purchased outside hospital",
+        "Dental unless accidental"
+      ]
+    },
+    "tpa_watch_points": [
+      "Verify whether admission cause is directly attributable to hypertension — if yes, apply PED waiting period clause.",
+      "Check if 4-year waiting period has lapsed by admission date (policy issue date: 2022).",
+      "Require discharge summary with BP readings charted to establish severity.",
+      "Ombudsman appeal from January 2025 admission is pending — do not process new hypertension claim without legal review."
+    ],
+    "recommendations": [
+      "Patient should carry all past prescription records showing hypertension diagnosis date to contest any 'new' claim on hypertension grounds.",
+      "File intimation within 24 hours for any emergency admission to avoid late intimation penalty.",
+      "Request TPA pre-auth in writing specifying cause (e.g., renal colic or headache unrelated to BP) to avoid automatic PED flag.",
+      "Patient advised to upgrade sum insured at next renewal given moderate-risk profile."
+    ]
+  },
+
+  "18-9876-5432-1001": {
+    "abha_id": "18-9876-5432-1001",
+    "patient_name": "Arun Patel",
+    "generated_date": "2026-03-01",
+    "risk_tier": "High",
+    "risk_color": "red",
+    "summary": "Arun Patel is a 60-year-old male with Type 2 Diabetes (on Metformin) and hypertension — both well-documented comorbidities that significantly elevate hospitalization risk and cost. At age 60, the probability of acute cardiac events, diabetic complications (nephropathy, neuropathy, retinopathy, foot ulcer), and wound-healing complications post-surgery is materially higher than average. Star Health imposes specific sub-limits on diabetic admissions. His sum insured of ₹4,00,000 may be insufficient for a complex cardiac or orthopaedic admission. All cost projections carry a 30–40% upward risk buffer due to comorbidity complexity.",
+    "past_claims": [
+      {
+        "year": 2023,
+        "event": "Type 2 DM management + mild DKA — Sterling Hospital, Ahmedabad",
+        "admission_date": "2023-06-20",
+        "discharge_date": "2023-06-25",
+        "claimed_amount": 62000,
+        "settled_amount": 55800,
+        "deduction_amount": 6200,
+        "deduction_reason": "Co-pay 10% applied as per Star Health DM clause; consumables excluded.",
+        "tpa": "Star TPA",
+        "status": "Settled"
+      },
+      {
+        "year": 2024,
+        "event": "Hypertension + Acute Kidney Injury Grade 1 — Apollo Hospital, Ahmedabad",
+        "admission_date": "2024-11-03",
+        "discharge_date": "2024-11-08",
+        "claimed_amount": 115000,
+        "settled_amount": 97000,
+        "deduction_amount": 18000,
+        "deduction_reason": "Co-pay 10% + non-medical consumables + nephrology consultation beyond package rate.",
+        "tpa": "Star TPA",
+        "status": "Settled"
+      }
+    ],
+    "cost_benchmarks": [
+      {
+        "category": "Room Charges",
+        "typical_range": "₹3,500 – ₹6,000 / day (ward); ₹14,000 – ₹20,000 / day (ICU)",
+        "basis": "Apollo MRP rate card — General Ward / MICU",
+        "patient_note": "DM + HTN patients have 2× higher ICU admission rate. Budget for 2–3 ICU days in any complex admission."
+      },
+      {
+        "category": "Diabetic Workup Panel",
+        "typical_range": "₹8,000 – ₹18,000",
+        "basis": "Apollo MRP — HbA1c, fasting/PP glucose, renal profile, urine microalbumin, lipid panel",
+        "patient_note": "Mandatory for every admission — elevated investigations cost compared to non-diabetic patients."
+      },
+      {
+        "category": "Wound Care / Dressing (if foot ulcer)",
+        "typical_range": "₹15,000 – ₹40,000 total",
+        "basis": "Apollo MRP — daily dressing ₹1,200 – ₹2,500 + surgical debridement ₹30,000 – ₹60,000",
+        "patient_note": "Diabetic foot is the most likely surgical cause of admission. Healing takes 10–21 days."
+      },
+      {
+        "category": "Medicines (Antibiotics + Insulin + BP)",
+        "typical_range": "₹30,000 – ₹60,000",
+        "basis": "Apollo MRP — broad-spectrum IV antibiotics (diabetic foot) + sliding-scale insulin + antihypertensives",
+        "patient_note": "IV antibiotic courses for diabetic infections are 7–14 days — the single largest variable cost driver."
+      },
+      {
+        "category": "Cardiology Workup (if STEMI/ACS risk)",
+        "typical_range": "₹1,20,000 – ₹3,50,000",
+        "basis": "Apollo MRP — CAG ₹25,000, PTCA + DES stent ₹1,80,000 – ₹2,80,000, post-cath monitoring",
+        "patient_note": "At 60 with DM+HTN, annual ACS risk is ~4%. Any chest pain admission should be triaged as cardiac first."
+      }
+    ],
+    "risk_factors": [
+      {
+        "factor": "Type 2 Diabetes — active comorbidity",
+        "impact": "cost_increase",
+        "detail": "DM increases length of stay by an average 1.8 days and total bill by 25–35% compared to non-diabetic patients with the same primary diagnosis. Star Health applies 10% co-pay on DM-related admissions."
+      },
+      {
+        "factor": "Hypertension on medication",
+        "impact": "cost_increase",
+        "detail": "Co-existing hypertension adds ₹8,000 – ₹15,000 in nephrology/cardiology consultations and additional investigations per admission."
+      },
+      {
+        "factor": "Age 60 — mandatory cardiac risk workup",
+        "impact": "cost_increase",
+        "detail": "Star Health requires pre-auth supporting documents for patients >55 to include 12-lead ECG and 2D Echo. Adds ₹6,000 – ₹10,000 to pre-admission workup."
+      },
+      {
+        "factor": "Sum insured ₹4,00,000 — potential inadequacy",
+        "impact": "financial_risk",
+        "detail": "A complex cardiac admission (PTCA + stent) can cost ₹3,00,000 – ₹4,50,000, exhausting or exceeding the sum insured. Patient will bear the balance."
+      }
+    ],
+    "insurance": {
+      "company": "Star Health and Allied Insurance",
+      "tpa": "Star TPA",
+      "policy_no": "STAR556677",
+      "sum_insured": 400000,
+      "utilized_ytd": 0,
+      "available": 400000,
+      "room_eligibility": "Semi-Private Room",
+      "cashless_network": "Yes — Apollo, HCG, SAL Hospital (Ahmedabad)",
+      "key_exclusions": [
+        "10% co-pay on all diabetes-related admissions",
+        "Non-medical consumables",
+        "Obesity treatment",
+        "Spectacles, contact lenses",
+        "Alternative medicine unless specifically covered"
+      ]
+    },
+    "tpa_watch_points": [
+      "Apply 10% co-pay automatically for any admission with DM as primary or secondary diagnosis.",
+      "Request HbA1c and renal function reports with every pre-auth — required for all DM patients per Star Health circular 2023.",
+      "If foot/wound admission: verify vascular surgery involvement, tissue culture reports, and debridement notes.",
+      "For amounts >₹2,00,000: escalate for medical officer pre-approval before releasing cashless authorisation."
+    ],
+    "recommendations": [
+      "Strongly advise patient to upgrade sum insured to ₹10,00,000 at next renewal — current ₹4L is insufficient for cardiac or orthopaedic intervention.",
+      "Patient should maintain a folder of latest HbA1c, BP readings, and current medications for every hospital visit.",
+      "Pre-admission glycaemic control (target HbA1c <7.5) reduces surgical complications and length of stay.",
+      "Hospital SME should factor in 10% co-pay when informing patient of expected out-of-pocket costs."
+    ]
+  },
+
+  "21-1111-2222-3333": {
+    "abha_id": "21-1111-2222-3333",
+    "patient_name": "Sunita Rao",
+    "generated_date": "2026-03-01",
+    "risk_tier": "Low",
+    "risk_color": "green",
+    "summary": "Sunita Rao is a 37-year-old female with no chronic comorbidities and a clean claim history. Her financial risk profile is low for general medical admissions. However, being in active reproductive age with New India Assurance coverage that includes maternity benefits (active since 2024), maternity-related admissions are the most probable financial event. The government-linked New India Assurance TPA (Health India TPA) has well-defined reimbursement ceilings for maternity, and itemised documentation is critical for smooth settlement. Her sum insured of ₹5,00,000 is adequate.",
+    "past_claims": [
+      {
+        "year": 2024,
+        "event": "NVD (Normal Vaginal Delivery) — KIMS Hospital, Hyderabad",
+        "admission_date": "2024-04-18",
+        "discharge_date": "2024-04-21",
+        "claimed_amount": 52000,
+        "settled_amount": 48500,
+        "deduction_amount": 3500,
+        "deduction_reason": "Non-medical consumables and extra companion charges excluded per New India standard policy terms.",
+        "tpa": "Health India TPA",
+        "status": "Settled"
+      }
+    ],
+    "cost_benchmarks": [
+      {
+        "category": "Maternity — NVD",
+        "typical_range": "₹35,000 – ₹65,000 (Tier-1 hospital)",
+        "basis": "Apollo MRP rate card — Normal delivery package",
+        "patient_note": "New India NVD benefit: up to ₹25,000. Remaining amount patient-borne. Actual hospital package rates often exceed the insurance ceiling."
+      },
+      {
+        "category": "Maternity — LSCS",
+        "typical_range": "₹90,000 – ₹1,60,000",
+        "basis": "Apollo MRP rate card — LSCS package (4-day admission)",
+        "patient_note": "New India LSCS benefit: up to ₹50,000. Patient out-of-pocket expected: ₹40,000 – ₹1,10,000 depending on room category."
+      },
+      {
+        "category": "Gynaecological Surgery (non-maternity)",
+        "typical_range": "₹55,000 – ₹1,20,000",
+        "basis": "Apollo MRP — Laparoscopic myomectomy / diagnostic laparoscopy / hysteroscopy",
+        "patient_note": "Covered fully under standard surgical benefit if not maternity-related."
+      },
+      {
+        "category": "General Medical Admission",
+        "typical_range": "₹40,000 – ₹90,000 (3–5 days)",
+        "basis": "Apollo MRP — standard ward charges + investigations + medicines",
+        "patient_note": "Low risk profile. Expect straightforward reimbursement without PED complications."
+      }
+    ],
+    "risk_factors": [
+      {
+        "factor": "No chronic conditions",
+        "impact": "neutral",
+        "detail": "Standard risk — no co-pay, no PED waiting period applicable, no mandatory co-morbidity workup required."
+      },
+      {
+        "factor": "Maternity benefit ceiling gap",
+        "impact": "cost_to_patient",
+        "detail": "New India's maternity benefit cap (NVD ₹25,000 / LSCS ₹50,000) is significantly below actual private hospital delivery costs in Hyderabad (₹60,000 – ₹1,50,000). Patient bears the gap."
+      },
+      {
+        "factor": "Blood group AB- (rare)",
+        "impact": "minor_risk",
+        "detail": "AB- is the rarest blood group (0.6% of population). In any surgical admission requiring transfusion, sourcing compatible blood may add emergency procurement costs and delay. Hospital blood bank availability should be verified in advance."
+      }
+    ],
+    "insurance": {
+      "company": "New India Assurance",
+      "tpa": "Health India TPA",
+      "policy_no": "NIAC445566",
+      "sum_insured": 500000,
+      "utilized_ytd": 0,
+      "available": 500000,
+      "room_eligibility": "Single Room",
+      "cashless_network": "Yes — Apollo, Care, Yashoda, Continental (Hyderabad)",
+      "key_exclusions": [
+        "Maternity benefit capped at NVD ₹25,000 / LSCS ₹50,000",
+        "Non-medical consumables",
+        "Companion / attendant charges",
+        "Cosmetic procedures",
+        "Infertility treatment"
+      ]
+    },
+    "tpa_watch_points": [
+      "For maternity admissions: apply sub-limit ceiling (NVD ₹25,000 / LSCS ₹50,000) — do not authorise beyond ceiling without medical officer review.",
+      "Verify AB- blood type entry — cross-check with blood bank if transfusion indicated in surgical cases.",
+      "Health India TPA requires 24-hour pre-intimation for planned procedures; 48 hours for maternity admissions.",
+      "Ensure discharge summary distinguishes maternity vs non-maternity charges for correct benefit mapping."
+    ],
+    "recommendations": [
+      "Patient should be informed about the maternity sub-limit gap before delivery admission — pre-plan out-of-pocket estimate.",
+      "For future surgeries requiring transfusion, pre-book AB- blood or confirm blood bank stock at the treating hospital.",
+      "Upgrade maternity benefit rider at next renewal if planning another pregnancy.",
+      "Keep all pre-natal consultation records as supporting documents for maternity claim."
+    ]
+  },
+
+  "31-4444-5555-6666": {
+    "abha_id": "31-4444-5555-6666",
+    "patient_name": "Vikram Singh",
+    "generated_date": "2026-03-01",
+    "risk_tier": "Critical",
+    "risk_color": "red",
+    "summary": "Vikram Singh is a 51-year-old male with ischemic heart disease (IHD) and Type 2 Diabetes — a high-risk dual-comorbidity profile that places him in the top 5% of hospital financial risk among insured patients. He has a documented history of a coronary intervention (PTCA with DES stent in 2022) and is on dual antiplatelet therapy (DAPT) and statins. Any re-admission carries a significant probability of repeat revascularisation (CABG or repeat PTCA), which can cost ₹3,00,000 – ₹8,00,000. His Oriental Insurance sum insured of ₹3,00,000 is critically inadequate for a cardiac event and is the largest financial vulnerability in his profile. The TPA (FHPL) is known for strict pre-auth timelines — delays in documentation have previously led to claim processing holds.",
+    "past_claims": [
+      {
+        "year": 2022,
+        "event": "STEMI — PTCA + DES stent × 1 — Fortis Hospital, Jaipur",
+        "admission_date": "2022-03-11",
+        "discharge_date": "2022-03-15",
+        "claimed_amount": 320000,
+        "settled_amount": 290000,
+        "deduction_amount": 30000,
+        "deduction_reason": "Stent material brand upgrade (DES to Bioresorbable Scaffold) not covered; consumables excluded.",
+        "tpa": "FHPL",
+        "status": "Settled"
+      },
+      {
+        "year": 2023,
+        "event": "Diabetic neuropathy + foot ulcer Grade 2 — SMS Hospital OPD (reimbursement)",
+        "admission_date": "2023-09-05",
+        "discharge_date": "2023-09-12",
+        "claimed_amount": 88000,
+        "settled_amount": 72000,
+        "deduction_amount": 16000,
+        "deduction_reason": "10% DM co-pay + wound dressing materials partially excluded.",
+        "tpa": "FHPL",
+        "status": "Settled"
+      },
+      {
+        "year": 2025,
+        "event": "Unstable angina — stress test + CAG — Narayana Hospital, Jaipur",
+        "admission_date": "2025-07-22",
+        "discharge_date": "2025-07-25",
+        "claimed_amount": 145000,
+        "settled_amount": 138000,
+        "deduction_amount": 7000,
+        "deduction_reason": "Administrative charges and telephone charges excluded.",
+        "tpa": "FHPL",
+        "status": "Settled"
+      }
+    ],
+    "cost_benchmarks": [
+      {
+        "category": "Cardiac ICU",
+        "typical_range": "₹18,000 – ₹28,000 / day",
+        "basis": "Apollo MRP rate card — CICU / CCU",
+        "patient_note": "All ACS admissions default to CICU for minimum 48 hours. Budget 3–5 CICU days for any cardiac event."
+      },
+      {
+        "category": "PTCA + DES Stent",
+        "typical_range": "₹1,60,000 – ₹2,80,000",
+        "basis": "Apollo MRP — Cath lab procedure + single DES stent (imported)",
+        "patient_note": "Previous stent placed 2022. In-stent restenosis or new lesion may require 2nd stent — double the implant cost."
+      },
+      {
+        "category": "CABG (if multi-vessel disease)",
+        "typical_range": "₹3,50,000 – ₹6,00,000",
+        "basis": "Apollo MRP — Bypass surgery (on-pump), 7–10 day admission",
+        "patient_note": "If catheterisation reveals multi-vessel disease, CABG may be advised. This will exceed sum insured by ₹50,000 – ₹3,00,000."
+      },
+      {
+        "category": "Cardiac Medicines (DAPT + Statins + Anti-anginals)",
+        "typical_range": "₹20,000 – ₹45,000 per admission",
+        "basis": "Apollo MRP — Ticagrelor/Clopidogrel + Atorvastatin + Bisoprolol + ACE inhibitor",
+        "patient_note": "Branded DAPT (Ticagrelor) is significantly more expensive than generic; verify formulary before billing."
+      },
+      {
+        "category": "Diabetic Complication Workup",
+        "typical_range": "₹12,000 – ₹22,000",
+        "basis": "Apollo MRP — HbA1c, eGFR, urine microalbumin, fundoscopy, peripheral nerve conduction",
+        "patient_note": "Mandatory in every admission — FHPL requires this as supporting documentation."
+      }
+    ],
+    "risk_factors": [
+      {
+        "factor": "IHD with prior PTCA — stent restenosis risk",
+        "impact": "high_cost",
+        "detail": "In-stent restenosis rate is 5–15% at 3 years for DES stents. Stent placed in 2022 is within the restenosis window. Repeat PTCA or CABG cost: ₹2,00,000 – ₹6,00,000."
+      },
+      {
+        "factor": "Type 2 Diabetes — accelerated atherosclerosis",
+        "impact": "high_cost",
+        "detail": "DM accelerates coronary artery disease progression. Multi-vessel involvement is likely at next cardiac event — raising probability of CABG over single-vessel PTCA."
+      },
+      {
+        "factor": "Sum insured ₹3,00,000 — critically insufficient",
+        "impact": "financial_risk",
+        "detail": "A CABG admission alone costs ₹3.5L – ₹6L. Patient will bear ₹50,000 – ₹3,00,000 out-of-pocket for any major cardiac event. This is the primary financial vulnerability."
+      },
+      {
+        "factor": "FHPL pre-auth processing time",
+        "impact": "operational_risk",
+        "detail": "FHPL is known for 12–24 hour pre-auth turnaround for complex cardiac cases. In STEMI, primary PCI window is 90 minutes — pre-auth cannot wait. Hospital must initiate procedure and seek post-event approval."
+      },
+      {
+        "factor": "Blood group O- (universal donor, rare recipient)",
+        "impact": "transfusion_risk",
+        "detail": "O- patients can only receive O- blood. Cardiac surgery typically requires 2–4 units. Ensure blood bank confirms O- stock availability before any elective procedure."
+      }
+    ],
+    "insurance": {
+      "company": "Oriental Insurance",
+      "tpa": "FHPL",
+      "policy_no": "ORIE223344",
+      "sum_insured": 300000,
+      "utilized_ytd": 0,
+      "available": 300000,
+      "room_eligibility": "General Ward",
+      "cashless_network": "Yes — Fortis, Narayana, Eternal (Jaipur)",
+      "key_exclusions": [
+        "Stent/implant brand upgrades beyond NPPA-listed price",
+        "Non-medical consumables",
+        "10% co-pay on DM-related admissions",
+        "Experimental procedures",
+        "Overseas treatment"
+      ]
+    },
+    "tpa_watch_points": [
+      "For STEMI: trigger post-event approval process immediately — do not delay PCI for pre-auth.",
+      "Sum insured is ₹3,00,000 — for any procedure exceeding this, notify patient of balance liability in writing before proceeding.",
+      "Stent implant cost must be at NPPA ceiling price — any brand premium above NPPA price is patient-borne.",
+      "FHPL requires HbA1c, lipid panel, and ECG within 30 days as supporting documents — collect at admission.",
+      "For CABG: FHPL medical officer approval mandatory before OT — allow 4–6 hours for complex cardiac approval."
+    ],
+    "recommendations": [
+      "URGENT: Patient should upgrade sum insured to minimum ₹15,00,000 at next renewal — current ₹3L is critically insufficient for his risk profile.",
+      "Consider top-up / super top-up policy to extend coverage beyond ₹3L deductible threshold.",
+      "Pre-authorise elective cardiac check-ups (stress test, CAG) in advance to avoid FHPL delay.",
+      "Hospital SME must inform patient of out-of-pocket liability estimate before any procedure exceeding ₹2,00,000.",
+      "Ensure blood bank confirms O- stock before any elective surgery requiring transfusion."
+    ]
+  }
+}

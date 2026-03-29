@@ -457,3 +457,59 @@ export interface CaseDetail {
   discharge: DischargeResponse | null;
   settlement: SettlementResponse | null;
 }
+
+// ---------------------------------------------------------------------------
+// Financial Audit
+// ---------------------------------------------------------------------------
+export interface FinancialAuditClaim {
+  year: number;
+  event: string;
+  admission_date: string;
+  discharge_date: string;
+  claimed_amount: number;
+  settled_amount: number;
+  deduction_amount: number;
+  deduction_reason: string;
+  tpa: string;
+  status: string;
+}
+
+export interface FinancialAuditBenchmark {
+  category: string;
+  typical_range: string;
+  basis: string;
+  patient_note: string;
+}
+
+export interface FinancialAuditRiskFactor {
+  factor: string;
+  impact: string;
+  detail: string;
+}
+
+export interface FinancialAuditInsurance {
+  company: string;
+  tpa: string;
+  policy_no: string;
+  sum_insured: number;
+  utilized_ytd: number;
+  available: number;
+  room_eligibility: string;
+  cashless_network: string;
+  key_exclusions: string[];
+}
+
+export interface FinancialAudit {
+  abha_id: string;
+  patient_name: string;
+  generated_date: string;
+  risk_tier: 'Low' | 'Moderate' | 'High' | 'Critical';
+  risk_color: 'green' | 'amber' | 'red';
+  summary: string;
+  past_claims: FinancialAuditClaim[];
+  cost_benchmarks: FinancialAuditBenchmark[];
+  risk_factors: FinancialAuditRiskFactor[];
+  insurance: FinancialAuditInsurance;
+  tpa_watch_points: string[];
+  recommendations: string[];
+}
