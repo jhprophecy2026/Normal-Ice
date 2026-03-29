@@ -160,7 +160,7 @@ function App() {
               <Activity className="text-white" size={24} />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">
-              Clinical<span className="text-blue-600 dark:text-blue-400">FHIR</span>
+              Normal-Ice
             </span>
           </Link>
 

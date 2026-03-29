@@ -1,19 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import {
-  Upload, CheckCircle2, AlertTriangle, AlertCircle,
+  Upload, CheckCircle2, AlertTriangle, AlertCircle, XCircle, Clock,
   Download, Plus, ArrowLeft, ArrowRight, IndianRupee, FileText, Lock, Send,
 } from 'lucide-react';
 import {
   getCase, generatePreAuthPdf, createEnhancement,
   extractEnhancementData,
   createDischarge, extractDischargeData, updateDischarge,
-  createSettlement, updateSettlement,
-  getFinancialAudit,
+  createSettlement, updateSettlement, closeSettlementCase,
+  getFinancialAudit, getBankStatement, uploadBankStatement,
+  sendPreAuthTpaEmail, sendEnhancementTpaEmail, sendDischargeTpaEmail,
 } from '../services/api';
 import type {
   CaseDetail, EnhancementData, EnhancementExtract, DischargeData, DischargeResponse,
-  SettlementResponse, FinancialAudit,
+  SettlementResponse, FinancialAudit, BankStatement,
 } from '../types/api';
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,62 @@ function fmt(n: number | undefined | null) {
 function Spinner({ sm }: { sm?: boolean }) {
   return (
     <span className={`inline-block rounded-full border-2 border-white/30 border-t-white animate-spin ${sm ? 'w-3.5 h-3.5' : 'w-4 h-4'}`} />
+  );
+}
+
+function Toast({ message, sub, onClose }: { message: string; sub: string; onClose: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onClose, 5000);
+    return () => clearTimeout(t);
+  }, [onClose]);
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex items-start gap-3.5 px-5 py-4 bg-slate-900 text-white rounded-2xl shadow-2xl border border-slate-700 max-w-xs">
+      <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center shrink-0 mt-0.5">
+        <CheckCircle2 size={16} className="text-green-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-sm text-white leading-tight">{message}</p>
+        <p className="text-xs text-slate-400 mt-1 leading-snug">{sub}</p>
+      </div>
+      <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors shrink-0 mt-0.5">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function SendTpaButton({ label, onSend }: { label: string; onSend: () => Promise<void> }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
+  const handle = async () => {
+    setState('sending');
+    try {
+      await onSend();
+      setState('sent');
+      setTimeout(() => setState('idle'), 3000);
+    } catch {
+      setState('idle');
+    }
+  };
+  return (
+    <button
+      onClick={handle}
+      disabled={state !== 'idle'}
+      className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-xl border transition-colors disabled:cursor-not-allowed ${
+        state === 'sent'
+          ? 'border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+          : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-60'
+      }`}
+    >
+      {state === 'sending' ? (
+        <><Spinner sm /> Sending…</>
+      ) : state === 'sent' ? (
+        <><CheckCircle2 size={14} /> Sent to TPA</>
+      ) : (
+        <><Send size={14} /> {label}</>
+      )}
+    </button>
   );
 }
 
@@ -555,9 +612,11 @@ function FinancialAuditPanel({ abhaId }: { abhaId: string }) {
 function PreAuthContent({
   caseData,
   onNext,
+  onToast,
 }: {
   caseData: CaseDetail;
   onNext: () => void;
+  onToast: (msg: string, sub: string) => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -577,6 +636,7 @@ function PreAuthContent({
       a.click();
       URL.revokeObjectURL(url);
       setSubmitted(true);
+      onToast('Pre-Auth submitted to TPA', 'Email sent with patient demographics, diagnosis & cost estimates.');
       setTimeout(onNext, 800);
     } finally {
       setSubmitting(false);
@@ -634,16 +694,6 @@ function PreAuthContent({
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-2 flex-wrap">
-        {!isAlreadySubmitted && (
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || submitted}
-            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60"
-          >
-            {submitting ? <Spinner sm /> : submitted ? <CheckCircle2 size={14} /> : <Send size={14} />}
-            {submitting ? 'Generating & Submitting…' : submitted ? 'Submitted!' : 'Submit Pre-Auth to TPA'}
-          </button>
-        )}
 
         <button
           onClick={async () => {
@@ -670,6 +720,14 @@ function PreAuthContent({
           </button>
         )}
 
+        <SendTpaButton
+          label="Send Pre-Auth to TPA"
+          onSend={async () => {
+            await sendPreAuthTpaEmail(pa.id);
+            onToast('Pre-Auth sent to TPA', 'Email sent with patient demographics, diagnosis & cost estimates.');
+          }}
+        />
+
         {pa.patient_id && (
           <Link
             to={`/patients/${pa.patient_id}`}
@@ -694,12 +752,14 @@ function EnhancementForm({
   originalTotal,
   onSave,
   onCancel,
+  onToast,
 }: {
   preAuthId: string;
   seqNo: number;
   originalTotal: number | null | undefined;
   onSave: () => void;
   onCancel: () => void;
+  onToast: (msg: string, sub: string) => void;
 }) {
   const [form, setForm] = useState<Partial<EnhancementData>>({});
   const [uploading, setUploading] = useState(false);
@@ -760,6 +820,7 @@ function EnhancementForm({
         revised_total_estimated_cost: revisedTotal ?? undefined,
       };
       await createEnhancement(preAuthId, payload);
+      onToast(`Enhancement #${seqNo} sent to TPA`, 'Email sent with updated diagnosis, procedure & revised cost estimate.');
       onSave();
     } catch (e: any) {
       setErr(e.response?.data?.detail || e.message || 'Failed to save');
@@ -900,10 +961,11 @@ function EnhancementForm({
 }
 
 function EnhancementContent({
-  caseData, onRefresh,
+  caseData, onRefresh, onToast,
 }: {
   caseData: CaseDetail;
   onRefresh: () => void;
+  onToast: (msg: string, sub: string) => void;
 }) {
   const [showForm, setShowForm] = useState(false);
 
@@ -1008,15 +1070,27 @@ function EnhancementContent({
             originalTotal={pa.total_estimated_cost}
             onSave={() => { setShowForm(false); onRefresh(); }}
             onCancel={() => setShowForm(false)}
+            onToast={onToast}
           />
         </div>
       )}
 
       {!showForm && (
-        <button onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 px-5 py-2.5 border border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium rounded-xl transition-colors">
-          <Plus size={15} /> Add Enhancement
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 px-5 py-2.5 border border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium rounded-xl transition-colors">
+            <Plus size={15} /> Add Enhancement
+          </button>
+          {pa && enhancements.length > 0 && (
+            <SendTpaButton
+              label="Send Enhancement to TPA"
+              onSend={async () => {
+                await sendEnhancementTpaEmail(pa.id);
+                onToast(`Enhancement #${enhancements.length} sent to TPA`, 'Email sent with updated diagnosis, procedure & revised cost estimate.');
+              }}
+            />
+          )}
+        </div>
       )}
     </div>
   );
@@ -1029,11 +1103,12 @@ function EnhancementContent({
 type DischargeFormState = Partial<DischargeData>;
 
 function DischargeContent({
-  caseData, discharge, onRefresh,
+  caseData, discharge, onRefresh, onToast,
 }: {
   caseData: CaseDetail;
   discharge: DischargeResponse | null;
   onRefresh: () => void;
+  onToast: (msg: string, sub: string) => void;
 }) {
   const [editing, setEditing] = useState(!discharge);
   const [uploading, setUploading] = useState(false);
@@ -1097,6 +1172,7 @@ function DischargeContent({
       const id = await ensureRecord();
       await updateDischarge(id, { bill_no: caseData.bill_no, pre_auth_id: pa.id, ...form });
       setEditing(false);
+      onToast('Discharge intimation sent to TPA', 'Email sent with final diagnosis, procedure codes & full bill breakdown.');
       onRefresh();
     } catch (e: any) {
       setErr(e.response?.data?.detail || e.message || 'Save failed');
@@ -1143,10 +1219,21 @@ function DischargeContent({
               <span className="text-lg font-bold text-slate-900 dark:text-white">{fmt(discharge.total_bill_amount)}</span>
             </div>
           </div>
-          <button onClick={() => setEditing(true)}
-            className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium hover:underline">
-            Edit / Re-upload
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={() => setEditing(true)}
+              className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium hover:underline">
+              Edit / Re-upload
+            </button>
+            {dischargeId && (
+              <SendTpaButton
+                label="Send Discharge to TPA"
+                onSend={async () => {
+                  await sendDischargeTpaEmail(dischargeId);
+                  onToast('Discharge intimation sent to TPA', 'Email sent with final diagnosis, procedure codes & full bill breakdown.');
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
 
@@ -1215,16 +1302,144 @@ function DischargeContent({
 }
 
 // ---------------------------------------------------------------------------
+// Bank Statement Panel
+// ---------------------------------------------------------------------------
+
+function BankStatementPanel({ billNo, isFinance }: { billNo: string; isFinance: boolean }) {
+  const [data, setData]         = useState<BankStatement | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr]           = useState<string | null>(null);
+  const fileRef                 = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    getBankStatement(billNo)
+      .then(setData)
+      .catch(() => setData(null))
+      .finally(() => setLoading(false));
+  }, [billNo]);
+
+  const handleFile = async (file: File) => {
+    setUploading(true); setErr(null);
+    try {
+      const result = await uploadBankStatement(billNo, file);
+      setData(result);
+    } catch (e: any) {
+      setErr(e.response?.data?.detail || e.message || 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (loading) return null;
+
+  const fields: { label: string; value: string | number | undefined | null }[] = [
+    { label: 'UTR / Reference',   value: data?.utr_number },
+    { label: 'Amount',            value: data?.amount != null ? `₹${Number(data.amount).toLocaleString('en-IN')}` : null },
+    { label: 'Date',              value: data?.transaction_date },
+    { label: 'Type',              value: data?.transaction_type },
+    { label: 'Sender Bank',       value: data?.sender_bank },
+    { label: 'Sender Account',    value: data?.sender_account },
+    { label: 'Receiver Bank',     value: data?.receiver_bank },
+    { label: 'Receiver Account',  value: data?.receiver_account },
+    { label: 'IFSC',              value: data?.ifsc_code },
+    { label: 'Narration',         value: data?.narration },
+  ].filter(f => f.value);
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-700">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            Payment Confirmation
+          </span>
+          {data && (
+            <span className="flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30 px-2 py-0.5 rounded-full">
+              <CheckCircle2 size={11} /> Verified
+            </span>
+          )}
+        </div>
+        {isFinance && (
+          <>
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+            >
+              {uploading
+                ? <span className="w-3 h-3 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                : <Upload size={12} />}
+              {data ? 'Re-upload' : 'Upload Statement'}
+            </button>
+            <input
+              ref={fileRef} type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="hidden"
+              onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); e.target.value = ''; }}
+            />
+          </>
+        )}
+      </div>
+
+      {/* Body */}
+      <div className="bg-white dark:bg-slate-900 px-4 py-4">
+        {err && (
+          <p className="text-xs text-red-500 mb-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
+            {err}
+          </p>
+        )}
+
+        {!data && !uploading && (
+          <p className="text-sm text-slate-400 dark:text-slate-500 py-1">
+            {isFinance
+              ? 'Upload the bank payment confirmation to extract transaction details.'
+              : 'Awaiting payment confirmation upload from Finance.'}
+          </p>
+        )}
+
+        {uploading && (
+          <div className="flex items-center gap-2 text-sm text-slate-500 py-1">
+            <span className="w-4 h-4 border-2 border-slate-200 border-t-blue-500 rounded-full animate-spin" />
+            Extracting transaction details…
+          </div>
+        )}
+
+        {data && fields.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3">
+            {fields.map(f => (
+              <div key={f.label}>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mb-0.5">{f.label}</p>
+                <p className={`text-sm font-semibold ${
+                  f.label === 'UTR / Reference'
+                    ? 'font-mono text-blue-600 dark:text-blue-400'
+                    : f.label === 'Amount'
+                    ? 'text-green-600 dark:text-green-400 text-base'
+                    : 'text-slate-800 dark:text-slate-200'
+                }`}>
+                  {String(f.value)}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Step 4 — Settlement content
 // ---------------------------------------------------------------------------
 
 function SettlementContent({
-  caseData, discharge, settlement, onRefresh,
+  caseData, discharge, settlement, onRefresh, isFinance,
 }: {
   caseData: CaseDetail;
   discharge: DischargeResponse | null;
   settlement: SettlementResponse | null;
   onRefresh: () => void;
+  isFinance: boolean;
 }) {
   const [deduction, setDeduction] = useState(settlement?.deduction_amount?.toString() || '0');
   const [deductionReason, setDeductionReason] = useState(settlement?.deduction_reason || '');
@@ -1272,21 +1487,23 @@ function SettlementContent({
     }
   };
 
-  const handleStatusChange = async (newStatus: string) => {
+  const finStatus = settlement?.status ?? 'pending';
+  const isFinanceApproved = finStatus === 'finance_approved';
+  const isFinanceDenied   = finStatus === 'finance_denied';
+  const isClosed          = finStatus === 'closed' || finStatus === 'followed_up';
+
+  const handleClose = async (newStatus: 'closed' | 'followed_up') => {
     if (!settlement) return;
     setStatusLoading(newStatus); setErr(null);
     try {
-      await updateSettlement(settlement.id, {
-        bill_no: caseData.bill_no,
-        status: newStatus,
-        deduction_amount: deductionNum,
-        deduction_reason: deductionReason || undefined,
-        tpa_remarks: tpaRemarks || undefined,
-        settlement_date: settlementDate || undefined,
-      });
+      if (newStatus === 'closed') {
+        await closeSettlementCase(settlement.id);
+      } else {
+        await updateSettlement(settlement.id, { bill_no: caseData.bill_no, status: 'followed_up' });
+      }
       onRefresh();
     } catch (e: any) {
-      setErr(e.response?.data?.detail || e.message || 'Update failed');
+      setErr(e.response?.data?.detail || e.message || 'Action failed');
     } finally {
       setStatusLoading(null);
     }
@@ -1294,23 +1511,8 @@ function SettlementContent({
 
   return (
     <div className="space-y-5">
-      {/* Settlement status banner if exists */}
-      {settlement && (
-        <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-          <div>
-            <p className="text-xs text-slate-500 mb-1">Settlement Status</p>
-            <Badge status={settlement.status || 'pending'} />
-          </div>
-          {settlement.final_settlement_amount != null && (
-            <div className="text-right">
-              <p className="text-xs text-slate-500 mb-1">Final Settlement</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{fmt(settlement.final_settlement_amount)}</p>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* Comparison table */}
+      {/* Amount comparison — always visible */}
       <div>
         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Amount Comparison</p>
         <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
@@ -1332,10 +1534,12 @@ function SettlementContent({
                   </td>
                 </tr>
               )}
-              <tr>
-                <td className="px-4 py-3.5 text-slate-500">Deduction</td>
-                <td className="px-4 py-3.5 font-semibold text-right text-amber-600">– {fmt(deductionNum)}</td>
-              </tr>
+              {settlement && (
+                <tr className="border-b border-slate-100 dark:border-slate-800">
+                  <td className="px-4 py-3.5 text-slate-500">Deduction</td>
+                  <td className="px-4 py-3.5 font-semibold text-right text-amber-600">– {fmt(settlement.deduction_amount)}</td>
+                </tr>
+              )}
               <tr className="bg-slate-50 dark:bg-slate-800/60">
                 <td className="px-4 py-4 font-bold text-slate-700 dark:text-slate-200">Settlement Amount</td>
                 <td className="px-4 py-4 font-bold text-blue-600 dark:text-blue-400 text-right text-lg">
@@ -1347,41 +1551,209 @@ function SettlementContent({
         </div>
       </div>
 
-      {/* Editable fields */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <FormInput label="Deduction Amount (₹)"  value={deduction}        onChange={setDeduction}        type="number" />
-        <FormInput label="Deduction Reason"       value={deductionReason}  onChange={setDeductionReason} />
-        <FormInput label="TPA Remarks"            value={tpaRemarks}       onChange={setTpaRemarks}      span2 area />
-        <FormInput label="Settlement Date"        value={settlementDate}   onChange={setSettlementDate}  type="date" />
+      {/* No settlement yet — create form */}
+      {!settlement && (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <FormInput label="Deduction Amount (₹)"  value={deduction}       onChange={setDeduction}       type="number" />
+            <FormInput label="Deduction Reason"       value={deductionReason} onChange={setDeductionReason} />
+            <FormInput label="TPA Remarks"            value={tpaRemarks}      onChange={setTpaRemarks}      span2 area />
+            <FormInput label="Settlement Date"        value={settlementDate}  onChange={setSettlementDate}  type="date" />
+          </div>
+          {err && <p className="text-xs text-red-500">{err}</p>}
+          <button onClick={handleCreate} disabled={saving}
+            className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
+            {saving ? <Spinner sm /> : <IndianRupee size={14} />}
+            Submit Settlement for Finance Review
+          </button>
+        </>
+      )}
+
+      {/* Settlement created — show status state */}
+      {settlement && !isClosed && !isFinanceApproved && !isFinanceDenied && (
+        <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0 mt-0.5">
+            <Clock size={15} className="text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Awaiting Finance Approval</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              Settlement details have been submitted. The Finance Manager will review and approve or deny this settlement.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Finance denied */}
+      {isFinanceDenied && (
+        <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <XCircle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">Settlement Denied by Finance</p>
+            {settlement.tpa_remarks && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{settlement.tpa_remarks}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Finance approved — Follow Up or Close Case */}
+      {isFinanceApproved && (
+        <>
+          <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+            <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Settlement Approved by Finance</p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+                Final settlement amount: <strong>{fmt(settlement.final_settlement_amount)}</strong>
+              </p>
+            </div>
+          </div>
+          {err && <p className="text-xs text-red-500">{err}</p>}
+          <div className="flex gap-3 flex-wrap">
+            <button
+              onClick={() => handleClose('followed_up')}
+              disabled={statusLoading !== null}
+              className="flex items-center gap-2 px-5 py-2.5 border border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 text-sm font-semibold rounded-xl hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors disabled:opacity-60"
+            >
+              {statusLoading === 'followed_up' ? <Spinner sm /> : <ArrowRight size={14} />}
+              Follow Up with TPA
+            </button>
+            <button
+              onClick={() => handleClose('closed')}
+              disabled={statusLoading !== null}
+              className="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60"
+            >
+              {statusLoading === 'closed' ? <Spinner sm /> : <CheckCircle2 size={14} />}
+              Close Case
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Case closed */}
+      {isClosed && (
+        <div className="flex items-center gap-3 px-5 py-5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center flex-col">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <CheckCircle2 size={24} className="text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-base font-bold text-slate-800 dark:text-slate-200">
+              {finStatus === 'followed_up' ? 'Followed Up' : 'Case Closed'}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              {finStatus === 'followed_up'
+                ? 'Follow-up has been initiated with TPA.'
+                : `This case has been fully settled. Final amount: ${fmt(settlement.final_settlement_amount)}`}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Bank Statement — shown once settlement exists */}
+      {settlement && (
+        <BankStatementPanel billNo={caseData.bill_no} isFinance={isFinance} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Finance Approval Content (Step 5)
+// ---------------------------------------------------------------------------
+
+function FinanceApprovalContent({ settlement }: { settlement: SettlementResponse | null }) {
+  if (!settlement) {
+    return (
+      <div className="flex items-center gap-3 px-5 py-6 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-500 text-sm">
+        <Lock size={16} className="shrink-0" />
+        Settlement has not been submitted yet. Complete step 4 first.
       </div>
+    );
+  }
 
-      {err && <p className="text-xs text-red-500">{err}</p>}
+  const status = settlement.status ?? 'pending';
+  const isApproved  = status === 'finance_approved';
+  const isDenied    = status === 'finance_denied';
+  const isClosed    = status === 'closed' || status === 'followed_up';
 
-      {/* Action buttons */}
-      {!settlement ? (
-        <button onClick={handleCreate} disabled={saving}
-          className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
-          {saving ? <Spinner sm /> : <IndianRupee size={14} />}
-          Create Settlement
-        </button>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {(['approved', 'rejected', 'paid'] as const).map((s) => {
-            const labels: Record<string, string> = { approved: '✓ Approve', rejected: '✗ Reject', paid: '💳 Mark Paid' };
-            const colors: Record<string, string> = {
-              approved: 'bg-green-600 hover:bg-green-700',
-              rejected: 'bg-red-600 hover:bg-red-700',
-              paid:     'bg-purple-600 hover:bg-purple-700',
-            };
-            return (
-              <button key={s} onClick={() => handleStatusChange(s)}
-                disabled={statusLoading !== null || settlement.status === s}
-                className={`flex items-center gap-1.5 px-4 py-2 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 ${colors[s]}`}>
-                {statusLoading === s ? <Spinner sm /> : null}
-                {labels[s]}
-              </button>
-            );
-          })}
+  return (
+    <div className="space-y-4">
+      {/* Status card */}
+      {(status === 'pending' || status === 'submitted') && (
+        <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+          <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center shrink-0">
+            <Clock size={15} className="text-amber-600 dark:text-amber-400" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Pending Finance Approval</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
+              Settlement has been submitted and is awaiting review by the Finance Manager.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isApproved && (
+        <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+          <CheckCircle2 size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">Approved by Finance</p>
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
+              Final settlement: <strong>{fmt(settlement.final_settlement_amount)}</strong>
+              {settlement.deduction_amount ? ` (deduction: ${fmt(settlement.deduction_amount)})` : ''}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isDenied && (
+        <div className="flex items-start gap-3 px-5 py-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+          <XCircle size={18} className="text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-700 dark:text-red-300">Denied by Finance</p>
+            {settlement.tpa_remarks && (
+              <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{settlement.tpa_remarks}</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isClosed && (
+        <div className="flex flex-col items-center gap-3 px-5 py-6 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+          <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+            <CheckCircle2 size={24} className="text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div className="text-center">
+            <p className="text-base font-bold text-slate-800 dark:text-slate-200">
+              {status === 'followed_up' ? 'Followed Up with TPA' : 'Case Closed'}
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Final settled amount: <strong>{fmt(settlement.final_settlement_amount)}</strong>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Finance decision summary */}
+      {(isApproved || isDenied || isClosed) && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden text-sm">
+          <table className="w-full">
+            <tbody>
+              <tr className="border-b border-slate-100 dark:border-slate-800">
+                <td className="px-4 py-3 text-slate-500">Claimed Amount</td>
+                <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200 text-right">{fmt(settlement.claimed_amount)}</td>
+              </tr>
+              <tr className="border-b border-slate-100 dark:border-slate-800">
+                <td className="px-4 py-3 text-slate-500">Finance Deduction</td>
+                <td className="px-4 py-3 font-semibold text-amber-600 text-right">– {fmt(settlement.deduction_amount ?? 0)}</td>
+              </tr>
+              <tr className="bg-slate-50 dark:bg-slate-800/60">
+                <td className="px-4 py-4 font-bold text-slate-700 dark:text-slate-200">Final Settlement</td>
+                <td className="px-4 py-4 font-bold text-blue-600 dark:text-blue-400 text-right text-lg">{fmt(settlement.final_settlement_amount)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       )}
     </div>
@@ -1396,8 +1768,11 @@ export default function CasePage() {
   const { billNo } = useParams<{ billNo: string }>();
   const [searchParams] = useSearchParams();
   const [caseData, setCaseData] = useState<CaseDetail | null>(null);
+  const isFinance = (() => { try { return JSON.parse(localStorage.getItem('auth') || '{}').role === 'finance'; } catch { return false; } })();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ msg: string; sub: string } | null>(null);
+  const showToast = useCallback((msg: string, sub: string) => setToast({ msg, sub }), []);
   const [activeStep, setActiveStep] = useState(() => {
     const s = parseInt(searchParams.get('step') || '1', 10);
     return s >= 1 && s <= 4 ? s : 1;
@@ -1548,10 +1923,10 @@ export default function CasePage() {
 
         {/* Step content body */}
         <div className="px-7 py-6">
-          {activeStep === 1 && <PreAuthContent caseData={caseData} onNext={() => setActiveStep(2)} />}
-          {activeStep === 2 && <EnhancementContent caseData={caseData} onRefresh={load} />}
+          {activeStep === 1 && <PreAuthContent caseData={caseData} onNext={() => setActiveStep(2)} onToast={showToast} />}
+          {activeStep === 2 && <EnhancementContent caseData={caseData} onRefresh={load} onToast={showToast} />}
           {activeStep === 3 && (
-            <DischargeContent caseData={caseData} discharge={caseData.discharge} onRefresh={load} />
+            <DischargeContent caseData={caseData} discharge={caseData.discharge} onRefresh={load} onToast={showToast} />
           )}
           {activeStep === 4 && (
             <SettlementContent
@@ -1559,6 +1934,7 @@ export default function CasePage() {
               discharge={caseData.discharge}
               settlement={caseData.settlement}
               onRefresh={load}
+              isFinance={isFinance}
             />
           )}
         </div>
@@ -1578,13 +1954,22 @@ export default function CasePage() {
               const next = activeStep + 1;
               if (next <= 4 && steps[next - 1].status !== 'locked') setActiveStep(next);
             }}
-            disabled={activeStep === 4 || steps[activeStep].status === 'locked'}
+            disabled={activeStep === 4 || steps[activeStep]?.status === 'locked'}
             className="flex items-center gap-2 px-4 py-2 text-sm text-slate-400 hover:text-slate-700 dark:hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
           >
             Next <ArrowLeft size={14} className="rotate-180" />
           </button>
         </div>
       </div>
+
+      {/* TPA email sent toast */}
+      {toast && (
+        <Toast
+          message={toast.msg}
+          sub={toast.sub}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

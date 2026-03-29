@@ -465,3 +465,27 @@ create index if not exists idx_patient_observations_bill_no on patient_observati
 create index if not exists idx_patient_medications_bill_no  on patient_medications(bill_no)   where bill_no is not null;
 create index if not exists idx_pre_auth_patient_id          on pre_auth_requests(patient_id)  where patient_id is not null;
 create index if not exists idx_enhancement_bill_no          on enhancement_requests(bill_no)  where bill_no is not null;
+
+-- ------------------------------------------------------------
+-- bank_statement_uploads
+-- Stores Gemini-extracted payment confirmation fields per case
+-- ------------------------------------------------------------
+create table if not exists bank_statement_uploads (
+    id               uuid primary key default gen_random_uuid(),
+    bill_no          text not null unique,
+    settlement_id    text,
+    utr_number       text,
+    amount           numeric,
+    transaction_date text,
+    transaction_type text,
+    sender_bank      text,
+    sender_account   text,
+    receiver_bank    text,
+    receiver_account text,
+    ifsc_code        text,
+    narration        text,
+    created_at       timestamptz default now(),
+    updated_at       timestamptz default now()
+);
+
+create index if not exists idx_bank_statement_bill_no on bank_statement_uploads(bill_no);

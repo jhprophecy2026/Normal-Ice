@@ -101,6 +101,61 @@ async def get_settlement(settlement_id: str):
     return _row_to_response(res.data[0])
 
 
+@router.post("/settlement/{settlement_id}/finance-action", response_model=SettlementResponse)
+async def finance_settlement_action(settlement_id: str, body: dict):
+    """
+    Finance manager approves or denies a settlement.
+    body: { "action": "approve" | "deny", "notes": optional str }
+    Sets status to 'finance_approved' or 'finance_denied'.
+    """
+    action = body.get("action")
+    if action not in ("approve", "deny"):
+        raise HTTPException(status_code=400, detail="action must be 'approve' or 'deny'")
+    sb = get_supabase()
+    check = sb.table("settlement_requests").select("id").eq("id", settlement_id).execute()
+    if not check.data:
+        raise HTTPException(status_code=404, detail=f"Settlement '{settlement_id}' not found")
+    # Fetch current record to recompute final amount if deduction provided
+    current = sb.table("settlement_requests").select("*").eq("id", settlement_id).execute()
+    current_row = current.data[0] if current.data else {}
+
+    updates: dict = {
+        "status": "finance_approved" if action == "approve" else "finance_denied",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    notes = body.get("notes", "")
+    if notes:
+        updates["tpa_remarks"] = notes
+
+    # Apply auto-deduction if provided (finance manager passes 5-10% of claimed)
+    deduction_amount = body.get("deduction_amount")
+    if deduction_amount is not None and action == "approve":
+        updates["deduction_amount"] = float(deduction_amount)
+        claimed = current_row.get("claimed_amount")
+        updates["final_settlement_amount"] = _compute_settlement_amount(claimed, float(deduction_amount))
+
+    res = sb.table("settlement_requests").update(updates).eq("id", settlement_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Update failed")
+    return _row_to_response(res.data[0])
+
+
+@router.post("/settlement/{settlement_id}/close", response_model=SettlementResponse)
+async def close_settlement_case(settlement_id: str):
+    """Mark a finance-approved settlement as fully closed."""
+    sb = get_supabase()
+    check = sb.table("settlement_requests").select("id, status").eq("id", settlement_id).execute()
+    if not check.data:
+        raise HTTPException(status_code=404, detail=f"Settlement '{settlement_id}' not found")
+    res = sb.table("settlement_requests").update({
+        "status": "closed",
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }).eq("id", settlement_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=500, detail="Update failed")
+    return _row_to_response(res.data[0])
+
+
 @router.put("/settlement/{settlement_id}", response_model=SettlementResponse)
 async def update_settlement(settlement_id: str, data: SettlementRequest):
     """

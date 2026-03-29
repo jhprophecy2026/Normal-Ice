@@ -12,7 +12,7 @@ import gc
 import logging
 import random
 import string
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File
 from fastapi.responses import Response
 
 
@@ -226,7 +226,7 @@ async def extract_medical(
 # ---------------------------------------------------------------------------
 
 @router.post("/pre-auth/{pre_auth_id}/generate-pdf")
-async def generate_pdf(pre_auth_id: str):
+async def generate_pdf(pre_auth_id: str, background_tasks: BackgroundTasks):
     """
     Generate and return a downloadable pre-auth PDF.
     Works even if some required fields are missing (they appear as red placeholders).
@@ -252,12 +252,46 @@ async def generate_pdf(pre_auth_id: str):
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }).eq("id", pre_auth_id).execute()
 
+    # Send pre-auth email to TPA in background
+    try:
+        from app.services.email_service import send_email, get_tpa_email
+        from app.services.email_templates import preauth_email
+        tpa_email = get_tpa_email(row.get("tpa_name"))
+        subject, html = preauth_email(row)
+        background_tasks.add_task(send_email, tpa_email, subject, html)
+        logger.info(f"Pre-auth email queued → {tpa_email}")
+    except Exception as email_err:
+        logger.warning(f"Failed to queue pre-auth email: {email_err}")
+
     filename = f"pre_auth_{pre_auth_id[:8]}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# ---------------------------------------------------------------------------
+# Send TPA email on demand
+# ---------------------------------------------------------------------------
+
+@router.post("/pre-auth/{pre_auth_id}/send-tpa-email")
+async def send_pre_auth_tpa_email(pre_auth_id: str, background_tasks: BackgroundTasks):
+    """Send the pre-auth verification email to TPA immediately."""
+    sb = get_supabase()
+    res = sb.table("pre_auth_requests").select("*").eq("id", pre_auth_id).execute()
+    if not res.data:
+        raise HTTPException(status_code=404, detail=f"Pre-auth '{pre_auth_id}' not found")
+    row = res.data[0]
+    try:
+        from app.services.email_service import send_email, get_tpa_email
+        from app.services.email_templates import preauth_email
+        tpa_email = get_tpa_email(row.get("tpa_name"))
+        subject, html = preauth_email(row)
+        background_tasks.add_task(send_email, tpa_email, subject, html)
+    except Exception as e:
+        logger.warning(f"Failed to queue pre-auth email: {e}")
+    return {"queued": True}
 
 
 # ---------------------------------------------------------------------------

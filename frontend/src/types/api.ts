@@ -447,6 +447,7 @@ export interface CaseSummary {
   has_enhancement: boolean;
   has_discharge: boolean;
   has_settlement: boolean;
+  settlement_status?: string;  // pending | finance_approved | finance_denied | closed | followed_up
   created_at?: string;
 }
 
@@ -456,6 +457,26 @@ export interface CaseDetail {
   enhancements: EnhancementResponse[];
   discharge: DischargeResponse | null;
   settlement: SettlementResponse | null;
+}
+
+// ---------------------------------------------------------------------------
+// Bank Statement
+// ---------------------------------------------------------------------------
+export interface BankStatement {
+  id: string;
+  bill_no: string;
+  settlement_id?: string;
+  utr_number?: string;
+  amount?: number;
+  transaction_date?: string;
+  transaction_type?: string;
+  sender_bank?: string;
+  sender_account?: string;
+  receiver_bank?: string;
+  receiver_account?: string;
+  ifsc_code?: string;
+  narration?: string;
+  created_at?: string;
 }
 
 // ---------------------------------------------------------------------------

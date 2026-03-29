@@ -11,7 +11,7 @@ import logging
 from datetime import datetime, timezone
 from typing import List
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File
 
 from app.models.discharge import DischargeRequest, DischargeResponse, DischargeExtract
 from app.services.supabase_client import get_supabase
@@ -86,7 +86,7 @@ async def get_discharge(discharge_id: str):
 
 
 @router.put("/discharge/{discharge_id}", response_model=DischargeResponse)
-async def update_discharge(discharge_id: str, data: DischargeRequest):
+async def update_discharge(discharge_id: str, data: DischargeRequest, background_tasks: BackgroundTasks):
     """Update a discharge record and recompute revenue flags."""
     sb = get_supabase()
 
@@ -111,7 +111,47 @@ async def update_discharge(discharge_id: str, data: DischargeRequest):
     res = sb.table("discharge_requests").update(updates).eq("id", discharge_id).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Update failed")
+
+    # Send discharge email to TPA in background
+    try:
+        from app.services.email_service import send_email, get_tpa_email
+        from app.services.email_templates import discharge_email
+        dis_row = res.data[0]
+        if pre_auth:
+            tpa_email = get_tpa_email(pre_auth.get("tpa_name"))
+            subject, html = discharge_email(dis_row, pre_auth)
+            background_tasks.add_task(send_email, tpa_email, subject, html)
+            logger.info(f"Discharge email queued → {tpa_email}")
+    except Exception as email_err:
+        logger.warning(f"Failed to queue discharge email: {email_err}")
+
     return _row_to_response(res.data[0])
+
+
+@router.post("/discharge/{discharge_id}/send-tpa-email")
+async def send_discharge_tpa_email(discharge_id: str, background_tasks: BackgroundTasks):
+    """Send the discharge intimation email to TPA immediately."""
+    sb = get_supabase()
+    dis_res = sb.table("discharge_requests").select("*").eq("id", discharge_id).execute()
+    if not dis_res.data:
+        raise HTTPException(status_code=404, detail=f"Discharge '{discharge_id}' not found")
+    dis_row = dis_res.data[0]
+    pre_auth = None
+    if dis_row.get("pre_auth_id"):
+        pa_res = sb.table("pre_auth_requests").select("*").eq("id", dis_row["pre_auth_id"]).execute()
+        if pa_res.data:
+            pre_auth = pa_res.data[0]
+    if not pre_auth:
+        raise HTTPException(status_code=404, detail="Pre-auth not found for this discharge")
+    try:
+        from app.services.email_service import send_email, get_tpa_email
+        from app.services.email_templates import discharge_email
+        tpa_email = get_tpa_email(pre_auth.get("tpa_name"))
+        subject, html = discharge_email(dis_row, pre_auth)
+        background_tasks.add_task(send_email, tpa_email, subject, html)
+    except Exception as e:
+        logger.warning(f"Failed to queue discharge email: {e}")
+    return {"queued": True}
 
 
 @router.post("/discharge/{discharge_id}/extract", response_model=DischargeExtract)

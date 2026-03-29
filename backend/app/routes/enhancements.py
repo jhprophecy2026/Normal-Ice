@@ -11,7 +11,7 @@ GET  /api/enhancement                          — list all enhancements
 import gc
 import logging
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, BackgroundTasks, HTTPException, UploadFile, File
 
 from app.models.enhancement import EnhancementRequest, EnhancementResponse, PatientCaseHistory, EnhancementExtract
 from app.services.supabase_client import get_supabase
@@ -110,7 +110,7 @@ async def list_enhancements_for_pre_auth(pre_auth_id: str):
 
 
 @router.post("/enhancement/pre-auth/{pre_auth_id}", response_model=EnhancementResponse)
-async def create_enhancement(pre_auth_id: str, data: EnhancementRequest):
+async def create_enhancement(pre_auth_id: str, data: EnhancementRequest, background_tasks: BackgroundTasks):
     """Raise a new enhancement request for an existing pre-auth."""
     sb = get_supabase()
 
@@ -150,6 +150,20 @@ async def create_enhancement(pre_auth_id: str, data: EnhancementRequest):
     res = sb.table("enhancement_requests").insert(row).execute()
     if not res.data:
         raise HTTPException(status_code=500, detail="Failed to create enhancement request")
+
+    # Send enhancement email to TPA in background
+    try:
+        from app.services.email_service import send_email, get_tpa_email
+        from app.services.email_templates import enhancement_email
+        # Fetch full pre-auth row for rich email context
+        pa_full = sb.table("pre_auth_requests").select("*").eq("id", pre_auth_id).execute()
+        pa_row = pa_full.data[0] if pa_full.data else pa
+        tpa_email = get_tpa_email(pa_row.get("tpa_name"))
+        subject, html = enhancement_email(res.data[0], pa_row)
+        background_tasks.add_task(send_email, tpa_email, subject, html)
+        logger.info(f"Enhancement email queued → {tpa_email}")
+    except Exception as email_err:
+        logger.warning(f"Failed to queue enhancement email: {email_err}")
 
     return _to_response(res.data[0])
 
@@ -237,6 +251,36 @@ async def extract_enhancement_pdf(
             gc.collect()
 
     return extract
+
+
+@router.post("/enhancement/pre-auth/{pre_auth_id}/send-tpa-email")
+async def send_enhancement_tpa_email(pre_auth_id: str, background_tasks: BackgroundTasks):
+    """Send the latest enhancement email to TPA immediately."""
+    sb = get_supabase()
+    # Get the latest enhancement for this pre-auth
+    enh_res = (
+        sb.table("enhancement_requests")
+        .select("*")
+        .eq("pre_auth_id", pre_auth_id)
+        .order("sequence_no", desc=True)
+        .limit(1)
+        .execute()
+    )
+    if not enh_res.data:
+        raise HTTPException(status_code=404, detail="No enhancements found for this pre-auth")
+    # Fetch full pre-auth row
+    pa_res = sb.table("pre_auth_requests").select("*").eq("id", pre_auth_id).execute()
+    if not pa_res.data:
+        raise HTTPException(status_code=404, detail=f"Pre-auth '{pre_auth_id}' not found")
+    try:
+        from app.services.email_service import send_email, get_tpa_email
+        from app.services.email_templates import enhancement_email
+        tpa_email = get_tpa_email(pa_res.data[0].get("tpa_name"))
+        subject, html = enhancement_email(enh_res.data[0], pa_res.data[0])
+        background_tasks.add_task(send_email, tpa_email, subject, html)
+    except Exception as e:
+        logger.warning(f"Failed to queue enhancement email: {e}")
+    return {"queued": True}
 
 
 @router.get("/enhancement", response_model=list[EnhancementResponse])

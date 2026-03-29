@@ -12,6 +12,7 @@ from app.routes import cases
 from app.routes import config
 from app.routes import mis
 from app.routes import financial_audit
+from app.routes import bank_statement
 from app.config import settings
 import logging
 
@@ -80,7 +81,8 @@ app.include_router(settlement.router,     prefix="/api", tags=["settlement"])
 app.include_router(cases.router,          prefix="/api", tags=["cases"])
 app.include_router(config.router,         prefix="/api", tags=["config"])
 app.include_router(mis.router,            prefix="/api", tags=["mis"])
-app.include_router(financial_audit.router, prefix="/api", tags=["financial-audit"])
+app.include_router(financial_audit.router,  prefix="/api", tags=["financial-audit"])
+app.include_router(bank_statement.router,  prefix="/api", tags=["bank-statement"])
 
 @app.get("/")
 async def root():

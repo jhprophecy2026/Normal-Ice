@@ -118,6 +118,18 @@ export const generatePreAuthPdf = async (id: string): Promise<Blob> => {
   return response.data;
 };
 
+export const sendPreAuthTpaEmail = async (id: string): Promise<void> => {
+  await api.post(`/pre-auth/${id}/send-tpa-email`);
+};
+
+export const sendEnhancementTpaEmail = async (preAuthId: string): Promise<void> => {
+  await api.post(`/enhancement/pre-auth/${preAuthId}/send-tpa-email`);
+};
+
+export const sendDischargeTpaEmail = async (dischargeId: string): Promise<void> => {
+  await api.post(`/discharge/${dischargeId}/send-tpa-email`);
+};
+
 export const estimateCosts = async (icd10: string, diagnosis: string): Promise<Record<string, any>> => {
   const response = await api.get('/pre-auth/estimate-costs', {
     params: { icd10, diagnosis },
@@ -224,6 +236,25 @@ export const updateSettlement = async (id: string, data: Partial<SettlementData>
   return response.data;
 };
 
+export const financeSettlementAction = async (
+  id: string,
+  action: 'approve' | 'deny',
+  notes?: string,
+  deductionAmount?: number,
+): Promise<SettlementResponse> => {
+  const response = await api.post<SettlementResponse>(`/settlement/${id}/finance-action`, {
+    action,
+    notes,
+    deduction_amount: deductionAmount,
+  });
+  return response.data;
+};
+
+export const closeSettlementCase = async (id: string): Promise<SettlementResponse> => {
+  const response = await api.post<SettlementResponse>(`/settlement/${id}/close`);
+  return response.data;
+};
+
 // ---------------------------------------------------------------------------
 // Config endpoints
 // ---------------------------------------------------------------------------
@@ -241,6 +272,23 @@ export const uploadCostEstimatesFile = async (file: File): Promise<{ success: bo
   const formData = new FormData();
   formData.append('file', file);
   const response = await api.post('/config/cost-estimates/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+// ---------------------------------------------------------------------------
+// Bank Statement
+// ---------------------------------------------------------------------------
+export const getBankStatement = async (billNo: string): Promise<import('../types/api').BankStatement> => {
+  const response = await api.get(`/bank-statement/${encodeURIComponent(billNo)}`);
+  return response.data;
+};
+
+export const uploadBankStatement = async (billNo: string, file: File): Promise<import('../types/api').BankStatement> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post(`/bank-statement/${encodeURIComponent(billNo)}/upload`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return response.data;

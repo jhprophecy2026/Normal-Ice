@@ -24,4 +24,9 @@ class Settings:
     SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
     SUPABASE_KEY: str = os.getenv("SUPABASE_KEY", "")  # use service_role key for backend
 
+    # Email (Resend) — leave RESEND_API_KEY blank to disable (emails logged instead)
+    RESEND_API_KEY:    str = os.getenv("RESEND_API_KEY", "")
+    FROM_EMAIL:        str = os.getenv("FROM_EMAIL", "onboarding@resend.dev")
+    DEFAULT_TPA_EMAIL: str = os.getenv("DEFAULT_TPA_EMAIL", "tpa-claims@example.com")
+
 settings = Settings()

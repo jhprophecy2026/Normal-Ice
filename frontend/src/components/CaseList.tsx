@@ -18,6 +18,22 @@ function StepDot({ done, label }: { done: boolean; label: string }) {
   );
 }
 
+function FinanceDot({ status }: { status?: string }) {
+  const approved = status === 'finance_approved' || status === 'closed' || status === 'followed_up';
+  const denied   = status === 'finance_denied';
+  const dotCls = approved
+    ? 'bg-blue-500'
+    : denied
+    ? 'bg-red-500'
+    : 'bg-slate-300 dark:bg-slate-600';
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className={`w-3 h-3 rounded-full transition-colors ${dotCls}`} title="Finance" />
+      <span className="text-xs text-slate-400 dark:text-slate-500 hidden sm:block whitespace-nowrap">Finance</span>
+    </div>
+  );
+}
+
 function StepIndicators({ c }: { c: CaseSummary }) {
   return (
     <div className="flex items-end gap-3">
@@ -25,6 +41,7 @@ function StepIndicators({ c }: { c: CaseSummary }) {
       <StepDot done={c.has_enhancement} label="Enhance" />
       <StepDot done={c.has_discharge} label="Discharge" />
       <StepDot done={c.has_settlement} label="Settlement" />
+      <FinanceDot status={c.settlement_status} />
     </div>
   );
 }

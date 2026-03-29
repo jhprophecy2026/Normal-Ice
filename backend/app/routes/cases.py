@@ -42,13 +42,17 @@ async def list_cases():
         "bill_no", bill_nos
     ).execute() if bill_nos else None
 
-    set_res = sb.table("settlement_requests").select("bill_no").in_(
+    set_res = sb.table("settlement_requests").select("bill_no, status").in_(
         "bill_no", bill_nos
     ).execute() if bill_nos else None
 
     enh_pre_auth_ids = set(r["pre_auth_id"] for r in (enh_res.data or []) if r.get("pre_auth_id"))
     dis_bill_nos = set(r["bill_no"] for r in (dis_res.data or []) if r.get("bill_no"))
-    set_bill_nos = set(r["bill_no"] for r in (set_res.data or []) if r.get("bill_no"))
+    # Map bill_no -> settlement status
+    set_bill_status: dict = {}
+    for r in (set_res.data or []):
+        if r.get("bill_no"):
+            set_bill_status[r["bill_no"]] = r.get("status", "pending")
 
     cases = []
     for r in rows:
@@ -65,7 +69,8 @@ async def list_cases():
             "total_estimated_cost": r.get("total_estimated_cost"),
             "has_enhancement": pre_auth_id in enh_pre_auth_ids,
             "has_discharge": bill_no in dis_bill_nos if bill_no else False,
-            "has_settlement": bill_no in set_bill_nos if bill_no else False,
+            "has_settlement": bill_no in set_bill_status if bill_no else False,
+            "settlement_status": set_bill_status.get(bill_no) if bill_no else None,
             "created_at": r.get("created_at"),
         })
 
