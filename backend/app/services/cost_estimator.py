@@ -28,7 +28,9 @@ _DATASET_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "disease_c
 def _load_dataset() -> list[dict]:
     path = os.path.normpath(_DATASET_PATH)
     with open(path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+        raw = json.load(f)
+    # Support both legacy array format and new {_meta, data} object format
+    data = raw["data"] if isinstance(raw, dict) else raw
     logger.info(f"Disease cost dataset loaded: {len(data)} entries")
     return data
 

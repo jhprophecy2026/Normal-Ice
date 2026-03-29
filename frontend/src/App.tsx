@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import FileUpload from './components/FileUpload';
+import ResultsView from './components/ResultsView';
 import PatientList from './components/PatientList';
 import PatientDetail from './components/PatientDetail';
 import PreAuthForm from './components/PreAuthForm';
 import EnhancementPage from './components/EnhancementPage';
 import CaseList from './components/CaseList';
 import CasePage from './components/CasePage';
+import ConfigPage from './components/ConfigPage';
 import { processPdf } from './services/api';
-import { Activity, Sun, Moon, Users, Upload, Briefcase } from 'lucide-react';
+import type { ProcessResponse } from './services/api';
+import { Activity, Sun, Moon, Users, Upload, Briefcase, Settings } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Upload page (previously the whole App)
 // ---------------------------------------------------------------------------
 function UploadPage() {
-  // onFileSelect is called per-file by FileUpload; throws on failure so
-  // FileUpload can mark that file as errored and continue with the rest.
+  const [lastResult, setLastResult] = useState<ProcessResponse | null>(null);
+
   const handleFileSelect = async (file: File) => {
     const response = await processPdf(file);
     if (!response.success) {
       throw new Error(response.error || response.message || 'Processing failed');
     }
+    setLastResult(response);
   };
 
   return (
@@ -37,29 +41,35 @@ function UploadPage() {
 
         <FileUpload onFileSelect={handleFileSelect} />
 
-        <div className="mt-10 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 transition-colors animate-in fade-in duration-700">
-          <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
-            How it works
-          </h3>
-          <ol className="space-y-3 text-slate-600 dark:text-slate-400">
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">1</span>
-              <span>Upload one or more clinical documents (PDF, image, Word, Excel, CSV)</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">2</span>
-              <span>NLP + LLM engine extracts structured clinical data from each file</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">3</span>
-              <span>System generates FHIR R4 bundles and saves patient records</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">4</span>
-              <span>View all processed patients in the Patients section</span>
-            </li>
-          </ol>
-        </div>
+        {lastResult ? (
+          <div className="mt-10 animate-in fade-in duration-500">
+            <ResultsView result={lastResult} onReset={() => setLastResult(null)} />
+          </div>
+        ) : (
+          <div className="mt-10 bg-white dark:bg-slate-800 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 transition-colors animate-in fade-in duration-700">
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">
+              How it works
+            </h3>
+            <ol className="space-y-3 text-slate-600 dark:text-slate-400">
+              <li className="flex items-start gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">1</span>
+                <span>Upload one or more clinical documents (PDF, image, Word, Excel, CSV)</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">2</span>
+                <span>NLP + LLM engine extracts structured clinical data from each file</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">3</span>
+                <span>System generates FHIR R4 bundles and saves patient records</span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 text-sm font-bold shrink-0">4</span>
+                <span>View all processed patients in the Patients section</span>
+              </li>
+            </ol>
+          </div>
+        )}
       </div>
     </main>
   );
@@ -121,6 +131,7 @@ function App() {
             {navLink('/', 'Upload', Upload)}
             {navLink('/cases', 'Cases', Briefcase)}
             {navLink('/patients', 'Patients', Users)}
+            {navLink('/configure', 'Configure', Settings)}
           </div>
         </div>
 
@@ -142,6 +153,7 @@ function App() {
         <Route path="/enhancement"          element={<main className="max-w-6xl mx-auto py-12 px-6"><EnhancementPage /></main>} />
         <Route path="/cases"               element={<main className="max-w-6xl mx-auto py-12 px-6"><CaseList /></main>} />
         <Route path="/cases/:billNo"       element={<main className="max-w-6xl mx-auto py-12 px-6"><CasePage /></main>} />
+        <Route path="/configure"           element={<main className="max-w-4xl mx-auto py-12 px-6"><ConfigPage /></main>} />
       </Routes>
 
       {/* Footer */}

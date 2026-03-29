@@ -224,4 +224,26 @@ export const updateSettlement = async (id: string, data: Partial<SettlementData>
   return response.data;
 };
 
+// ---------------------------------------------------------------------------
+// Config endpoints
+// ---------------------------------------------------------------------------
+export const getCostEstimates = async (): Promise<{ _meta: any; data: any[] }> => {
+  const response = await api.get('/config/cost-estimates');
+  return response.data;
+};
+
+export const updateCostEstimates = async (data: any[]): Promise<{ success: boolean; count: number }> => {
+  const response = await api.put('/config/cost-estimates', { data });
+  return response.data;
+};
+
+export const uploadCostEstimatesFile = async (file: File): Promise<{ success: boolean; count: number }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/config/cost-estimates/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
 export default api;

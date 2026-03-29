@@ -9,6 +9,7 @@ from app.routes import enhancements
 from app.routes import discharge
 from app.routes import settlement
 from app.routes import cases
+from app.routes import config
 from app.config import settings
 import logging
 
@@ -62,6 +63,7 @@ app.include_router(enhancements.router,   prefix="/api", tags=["enhancements"])
 app.include_router(discharge.router,      prefix="/api", tags=["discharge"])
 app.include_router(settlement.router,     prefix="/api", tags=["settlement"])
 app.include_router(cases.router,          prefix="/api", tags=["cases"])
+app.include_router(config.router,         prefix="/api", tags=["config"])
 
 @app.get("/")
 async def root():
